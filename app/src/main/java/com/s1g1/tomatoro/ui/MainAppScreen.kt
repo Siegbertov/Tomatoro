@@ -11,10 +11,20 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
 @Composable
-fun MainAppScreen() {
+fun MainAppScreen(
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit
+) {
     val navController = rememberNavController()
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        topBar = {
+            SimpleTopBar(
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = {onToggleTheme()}
+            )
+
+        },
         floatingActionButtonPosition = FabPosition.Center,
         floatingActionButton = {
             NavigationBottomToolbar(
