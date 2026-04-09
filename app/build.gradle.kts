@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.ksp)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -57,7 +58,9 @@ dependencies {
     implementation(libs.androidx.compose.foundation) // COMPOSE CORE
     implementation(libs.androidx.navigation.compose) // NAVIGATION
     implementation(libs.androidx.compose.animation) // ANIMATION
+    implementation(libs.material3)
     coreLibraryDesugaring(libs.desugar.jdk.libs) // COMPATIBILITY with LocalDate LocalTime
+    implementation(libs.kotlinx.serialization.json)
 
     /*   ROOM (DATABASE)   */
     implementation(libs.androidx.room.runtime)
