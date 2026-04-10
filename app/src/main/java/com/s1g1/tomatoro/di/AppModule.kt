@@ -4,6 +4,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.s1g1.tomatoro.SettingsRepository
 import com.s1g1.tomatoro.SettingsViewModel
+import com.s1g1.tomatoro.ui.TimerViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -18,4 +19,6 @@ val appModule = module {
     single { SettingsRepository(get()) }
 
     viewModel { SettingsViewModel(get()) }
+
+    viewModel { TimerViewModel() }
 }

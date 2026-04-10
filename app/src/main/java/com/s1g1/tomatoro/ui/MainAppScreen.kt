@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.s1g1.tomatoro.SettingsViewModel
 import com.s1g1.tomatoro.UserSettings
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun MainAppScreen(
@@ -18,6 +19,7 @@ fun MainAppScreen(
     userSettings: UserSettings?,
 ) {
     val navController = rememberNavController()
+    val timerViewModel: TimerViewModel = koinViewModel()
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = { SimpleTopBar() },
@@ -36,7 +38,8 @@ fun MainAppScreen(
             composable<Screen.Timer>{
                 TimerScreen(
                     navController=navController,
-                    userSettings=userSettings
+                    userSettings=userSettings,
+                    timerViewModel=timerViewModel
                 )
             }
             composable<Screen.Stats>{
