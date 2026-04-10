@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">Tomatoro</string>
+
+
+    <string name="settings_duration">DURATIONS</string>
+    <string name="tomatoro_session">TOMATORO</string>
+    <string name="short_break_session">BREAK</string>
+    <string name="long_break_session">LONG BREAK</string>
+
 </resources>

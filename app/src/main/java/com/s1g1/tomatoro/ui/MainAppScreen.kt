@@ -9,9 +9,13 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.s1g1.tomatoro.SettingsViewModel
+import com.s1g1.tomatoro.UserSettings
 
 @Composable
 fun MainAppScreen(
+    settingsViewModel: SettingsViewModel,
+    userSettings: UserSettings?,
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit
 ) {
@@ -37,9 +41,24 @@ fun MainAppScreen(
             startDestination = Screen.Timer,
             modifier = Modifier.padding(innerPadding)
             ){
-            composable<Screen.Timer>{ TimerScreen(navController=navController) }
-            composable<Screen.Stats>{ StatsScreen(navController=navController) }
-            composable<Screen.Settings>{ SettingsScreen(navController=navController) }
+            composable<Screen.Timer>{
+                TimerScreen(
+                    navController=navController,
+                    userSettings=userSettings
+                )
+            }
+            composable<Screen.Stats>{
+                StatsScreen(
+                    navController=navController
+                )
+            }
+            composable<Screen.Settings>{
+                SettingsScreen(
+                    navController=navController,
+                    settingsViewModel=settingsViewModel,
+                    userSettings=userSettings
+                )
+            }
         }
     }
 }

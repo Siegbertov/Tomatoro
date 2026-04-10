@@ -22,6 +22,8 @@ class MainActivity : ComponentActivity() {
 
             TomatoroTheme(darkTheme = isDarkTheme) {
                 MainAppScreen(
+                    settingsViewModel = settingsViewModel,
+                    userSettings = userSettings,
                     isDarkTheme = isDarkTheme,
                     onToggleTheme = { settingsViewModel.updateTheme(newTheme = !isDarkTheme) }
                 )
