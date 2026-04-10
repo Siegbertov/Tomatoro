@@ -30,6 +30,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.s1g1.tomatoro.R
 import com.s1g1.tomatoro.SettingsViewModel
+import com.s1g1.tomatoro.TimerMode
 import com.s1g1.tomatoro.UserSettings
 
 @Composable
@@ -63,9 +64,9 @@ fun DurationSettingsComponent(
     userSettings: UserSettings?,
     settingsViewModel: SettingsViewModel
 ) {
-    val sessionTime = userSettings?.sessionTime?:25
-    val shortBreakTime = userSettings?.shortBreakTime?:5
-    val longBreakTime = userSettings?.longBreakTime?:15
+    val sessionTime = userSettings?.sessionTime?: TimerMode.TOMATORO.defaultDuration
+    val shortBreakTime = userSettings?.shortBreakTime?:TimerMode.BREAK.defaultDuration
+    val longBreakTime = userSettings?.longBreakTime?:TimerMode.LONG_BREAK.defaultDuration
 
     Row(
         modifier = Modifier.fillMaxWidth()

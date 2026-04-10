@@ -19,9 +19,9 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>){
         .map { preferences ->
             UserSettings(
                 isDarkMode = preferences[PreferenceKeys.IS_DARK_MODE] ?: false,
-                sessionTime = preferences[PreferenceKeys.SESSION_TIME] ?: 25,
-                shortBreakTime = preferences[PreferenceKeys.SHORT_BREAK_TIME] ?: 5,
-                longBreakTime = preferences[PreferenceKeys.LONG_BREAK_TIME] ?: 15
+                sessionTime = preferences[PreferenceKeys.SESSION_TIME] ?: TimerMode.TOMATORO.defaultDuration,
+                shortBreakTime = preferences[PreferenceKeys.SHORT_BREAK_TIME] ?: TimerMode.BREAK.defaultDuration,
+                longBreakTime = preferences[PreferenceKeys.LONG_BREAK_TIME] ?: TimerMode.LONG_BREAK.defaultDuration
             )
         }
 
