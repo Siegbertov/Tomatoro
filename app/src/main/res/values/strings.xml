@@ -7,4 +7,7 @@
     <string name="short_break_session">BREAK</string>
     <string name="long_break_session">LONG BREAK</string>
 
+    <string name="dark_theme">DARK THEME</string>
+
+
 </resources>

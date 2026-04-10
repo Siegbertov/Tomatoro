@@ -16,19 +16,11 @@ import com.s1g1.tomatoro.UserSettings
 fun MainAppScreen(
     settingsViewModel: SettingsViewModel,
     userSettings: UserSettings?,
-    isDarkTheme: Boolean,
-    onToggleTheme: () -> Unit
 ) {
     val navController = rememberNavController()
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        topBar = {
-            SimpleTopBar(
-                isDarkTheme = isDarkTheme,
-                onToggleTheme = {onToggleTheme()}
-            )
-
-        },
+        topBar = { SimpleTopBar() },
         floatingActionButtonPosition = FabPosition.Center,
         floatingActionButton = {
             NavigationBottomToolbar(

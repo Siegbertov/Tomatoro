@@ -10,15 +10,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -55,6 +60,53 @@ fun SettingsScreen(
             userSettings=userSettings,
             settingsViewModel=settingsViewModel
         )
+
+        ThemeSettingsComponent(
+            userSettings=userSettings,
+            settingsViewModel=settingsViewModel
+        )
+    }
+}
+
+@Composable
+fun ThemeSettingsComponent(
+    userSettings: UserSettings?,
+    settingsViewModel: SettingsViewModel
+) {
+    val isDarkTheme = userSettings?.isDarkMode ?: true
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical=10.dp, horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ){
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ){
+            Text(
+                text=stringResource(R.string.dark_theme)
+            )
+
+            Switch(
+                checked = isDarkTheme,
+                onCheckedChange = { settingsViewModel.updateTheme(newTheme = !isDarkTheme) },
+                thumbContent = {
+                    if (isDarkTheme) {
+                        Icon(
+                            imageVector = Icons.Filled.DarkMode,
+                            contentDescription = null,
+                            modifier = Modifier.size(SwitchDefaults.IconSize)
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Filled.LightMode,
+                            contentDescription = null,
+                            modifier = Modifier.size(SwitchDefaults.IconSize)
+                        )
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -69,7 +121,7 @@ fun DurationSettingsComponent(
     val longBreakTime = userSettings?.longBreakTime?:TimerMode.LONG_BREAK.defaultDuration
 
     Row(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().padding(vertical=10.dp, horizontal = 10.dp),
     ){
         Column(
             modifier = Modifier.fillMaxWidth(),

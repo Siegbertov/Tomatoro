@@ -19,8 +19,7 @@ import com.s1g1.tomatoro.R
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SimpleTopBar(
-    isDarkTheme: Boolean,
-    onToggleTheme: () -> Unit
+
 ){
     CenterAlignedTopAppBar(
         modifier = Modifier.statusBarsPadding(),
@@ -30,14 +29,6 @@ fun SimpleTopBar(
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
-        },
-        navigationIcon ={
-            IconButton(onClick={onToggleTheme()}){
-                Icon(
-                    imageVector = if(isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
-                    contentDescription = null
-                )
-            }
         },
     )
 }
