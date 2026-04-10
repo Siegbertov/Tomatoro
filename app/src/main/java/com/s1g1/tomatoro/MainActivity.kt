@@ -5,22 +5,25 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.s1g1.tomatoro.ui.MainAppScreen
 import com.s1g1.tomatoro.ui.theme.TomatoroTheme
+import org.koin.androidx.compose.koinViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            var isDarkTheme by remember{mutableStateOf(true)}
+
+            val settingsViewModel: SettingsViewModel = koinViewModel()
+            val userSettings by settingsViewModel.settings.collectAsStateWithLifecycle()
+            val isDarkTheme = userSettings?.isDarkMode ?: true
+
             TomatoroTheme(darkTheme = isDarkTheme) {
                 MainAppScreen(
                     isDarkTheme = isDarkTheme,
-                    onToggleTheme = {isDarkTheme = !isDarkTheme}
+                    onToggleTheme = { settingsViewModel.updateTheme(newTheme = !isDarkTheme) }
                 )
             }
         }

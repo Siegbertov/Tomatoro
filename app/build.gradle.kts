@@ -62,6 +62,8 @@ dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs) // COMPATIBILITY with LocalDate LocalTime
     implementation(libs.kotlinx.serialization.json)
 
+    implementation(libs.androidx.datastore.preferences) // DATASTORE
+
     /*   ROOM (DATABASE)   */
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
