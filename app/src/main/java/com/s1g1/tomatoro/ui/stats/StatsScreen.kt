@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
@@ -30,6 +32,8 @@ fun StatsScreen(
     navController: NavHostController,
     statsViewModel: StatsViewModel
 ) {
+
+    val scrollState = rememberScrollState()
     val allSessions by statsViewModel.allSessions.collectAsState()
 
     val dayLabel by statsViewModel.dayLabel.collectAsState()
@@ -41,8 +45,14 @@ fun StatsScreen(
     val monthLabel by statsViewModel.monthLabel.collectAsState()
     val monthSessions by statsViewModel.monthSessions.collectAsState()
 
+    val yearLabel by statsViewModel.yearLabel.collectAsState()
+    val yearSessions by statsViewModel.yearSessions.collectAsState()
+
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .padding(bottom=80.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ){
@@ -65,6 +75,13 @@ fun StatsScreen(
             sessions = monthSessions,
             onLeftClick = { statsViewModel.moveMonth(delta = -1) },
             onRightClick = { statsViewModel.moveMonth(delta = 1) }
+        )
+
+        StatsRow(
+            periodLabel = yearLabel,
+            sessions = yearSessions,
+            onLeftClick = { statsViewModel.moveYear(delta = -1) },
+            onRightClick = { statsViewModel.moveYear(delta = 1) }
         )
     }
 }

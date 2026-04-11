@@ -32,9 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.currentBackStackEntryAsState
 import com.s1g1.tomatoro.R
-import com.s1g1.tomatoro.ui.settings.SettingsViewModel
 import com.s1g1.tomatoro.TimerMode
 import com.s1g1.tomatoro.UserSettings
 
@@ -47,19 +45,22 @@ fun SettingsScreen(
     Column(
         modifier = Modifier
             .verticalScroll(scrollState)
+            .padding(bottom=80.dp)
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ){
-        DurationSettingsComponent(
-            userSettings=userSettings,
-            settingsViewModel=settingsViewModel
-        )
 
         ThemeSettingsComponent(
             userSettings=userSettings,
             settingsViewModel=settingsViewModel
         )
+
+        DurationSettingsComponent(
+            userSettings=userSettings,
+            settingsViewModel=settingsViewModel
+        )
+
     }
 }
 
