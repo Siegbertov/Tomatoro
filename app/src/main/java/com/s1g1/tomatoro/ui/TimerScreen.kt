@@ -1,5 +1,10 @@
 package com.s1g1.tomatoro.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -174,20 +179,26 @@ fun ModeSelectorComponent(
     selectedMode: TimerMode,
     onModeChange: (TimerMode) -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
+    AnimatedVisibility(
+        visible = !isRunning,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically(),
     ){
-        TimerMode.entries.forEach { mode->
-            FilterChip(
-                selected = selectedMode==mode,
-                onClick = {
-                    if (!isRunning){
-                        onModeChange(mode)
-                    }
-                },
-                label = { Text( text = stringResource(mode.title))}
-            )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ){
+            TimerMode.entries.forEach { mode->
+                FilterChip(
+                    selected = selectedMode==mode,
+                    onClick = {
+                        if (!isRunning){
+                            onModeChange(mode)
+                        }
+                    },
+                    label = { Text( text = stringResource(mode.title))}
+                )
+            }
         }
     }
 }
