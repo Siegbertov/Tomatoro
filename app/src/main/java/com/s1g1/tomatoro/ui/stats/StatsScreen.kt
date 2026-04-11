@@ -32,11 +32,14 @@ fun StatsScreen(
 ) {
     val allSessions by statsViewModel.allSessions.collectAsState()
 
-    val daySessions by statsViewModel.daySessions.collectAsState()
     val dayLabel by statsViewModel.dayLabel.collectAsState()
+    val daySessions by statsViewModel.daySessions.collectAsState()
 
-    val weekSessions by statsViewModel.weekSessions.collectAsState()
     val weekLabel by statsViewModel.weekLabel.collectAsState()
+    val weekSessions by statsViewModel.weekSessions.collectAsState()
+
+    val monthLabel by statsViewModel.monthLabel.collectAsState()
+    val monthSessions by statsViewModel.monthSessions.collectAsState()
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -44,24 +47,31 @@ fun StatsScreen(
         verticalArrangement = Arrangement.Top
     ){
         StatsRow(
-            periodTitle = dayLabel,
+            periodLabel = dayLabel,
             sessions = daySessions,
             onLeftClick = { statsViewModel.moveDay(delta = -1) },
             onRightClick = { statsViewModel.moveDay(delta = 1) }
         )
 
         StatsRow(
-            periodTitle = weekLabel,
+            periodLabel = weekLabel,
             sessions = weekSessions,
             onLeftClick = { statsViewModel.moveWeek(delta = -1) },
             onRightClick = { statsViewModel.moveWeek(delta = 1) }
+        )
+
+        StatsRow(
+            periodLabel = monthLabel,
+            sessions = monthSessions,
+            onLeftClick = { statsViewModel.moveMonth(delta = -1) },
+            onRightClick = { statsViewModel.moveMonth(delta = 1) }
         )
     }
 }
 
 @Composable
 fun StatsRow(
-    periodTitle: String,
+    periodLabel: String,
     sessions: List<Session>,
     onLeftClick: ()->Unit,
     onRightClick: ()->Unit,
@@ -75,7 +85,7 @@ fun StatsRow(
             IconButton(onClick = onLeftClick) {
                 Icon(Icons.Default.KeyboardArrowLeft, contentDescription = null)
             }
-            Text(text = periodTitle)
+            Text(text = periodLabel)
             IconButton(onClick = onRightClick) {
                 Icon(Icons.Default.KeyboardArrowRight, contentDescription = null)
             }

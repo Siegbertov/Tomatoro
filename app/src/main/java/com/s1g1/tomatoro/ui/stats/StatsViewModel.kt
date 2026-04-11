@@ -56,7 +56,7 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
             timeInMillis
         }
 
-        sessions.filter { it.endTimestamp in startOfDay..endOfDay }
+        sessions.filter { it.endTimestamp in startOfDay until endOfDay }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun moveDay(delta: Int) {
@@ -99,7 +99,7 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
             timeInMillis
         }
 
-        sessions.filter { it.endTimestamp in startOfWeek..endOfWeek }
+        sessions.filter { it.endTimestamp in startOfWeek until endOfWeek }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun moveWeek(delta: Int) {
@@ -107,4 +107,45 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
             _weekOffset.value += delta
         }
     }
+
+    // TODO WEEK COMPONENTS
+    val _monthOffset = MutableStateFlow(0) // 0 - this month -1 - prev month
+    val monthLabel: StateFlow<String> = _monthOffset.map { offset ->
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.MONTH, offset)
+
+        val sdf = SimpleDateFormat("MMMM", Locale.getDefault())
+        sdf.format(calendar.time).uppercase()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    val monthSessions: StateFlow<List<Session>> = combine(
+        allSessions,
+        _monthOffset
+    ){ sessions, offset ->
+        val baseCalendar = Calendar.getInstance().apply {
+            set(Calendar.DAY_OF_MONTH, 1)
+            add(Calendar.MONTH, offset)
+        }
+
+        val startOfMonth = baseCalendar.run {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            timeInMillis
+        }
+
+        val endOfMonth = baseCalendar.run {
+            add(Calendar.MONTH, 1)
+            timeInMillis
+        }
+
+        sessions.filter { it.endTimestamp in startOfMonth until endOfMonth }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    fun moveMonth(delta: Int) {
+        if (delta<0 || _monthOffset.value != 0){
+            _monthOffset.value += delta
+        }
+    }
+
 }
