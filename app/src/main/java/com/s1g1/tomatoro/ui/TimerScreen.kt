@@ -55,6 +55,7 @@ fun TimerScreen(
         ?.substringAfterLast(".") ?: "Loading..."
 
     var selectedMode by remember { mutableStateOf(TimerMode.TOMATORO) }
+    val selectedModeString = stringResource(selectedMode.title)
 
     val currentTime = when(selectedMode){
         TimerMode.TOMATORO -> userSettings?.sessionTime?:TimerMode.TOMATORO.defaultDuration
@@ -72,7 +73,7 @@ fun TimerScreen(
                 TimerMode.BREAK -> userSettings?.shortBreakTime?:TimerMode.BREAK.defaultDuration
                 TimerMode.LONG_BREAK -> userSettings?.longBreakTime?:TimerMode.LONG_BREAK.defaultDuration
             }
-            timerViewModel.resetTimer(initialTime * 60L)
+            timerViewModel.resetTimer(seconds =initialTime * 60L, manual = false)
         }
     }
 
@@ -98,7 +99,7 @@ fun TimerScreen(
 
         TimerButtonsComponent(
             isRunning=isRunning,
-            onStartPause = { timerViewModel.onStartPausePressed(timeLeft = timeLeft) },
+            onStartPause = { timerViewModel.onStartPausePressed(timeLeft = timeLeft, modeString=selectedModeString) },
             onReset = { timerViewModel.onResetPressed(resetTime = currentTime*60L) }
         )
 
