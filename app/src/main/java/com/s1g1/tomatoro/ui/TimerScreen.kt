@@ -6,25 +6,27 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ProgressIndicatorDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,7 +58,6 @@ fun TimerScreen(
         ?.substringAfterLast(".") ?: "Loading..."
 
     var selectedMode by remember { mutableStateOf(TimerMode.TOMATORO) }
-    val selectedModeString = stringResource(selectedMode.title)
 
     val currentTime = when(selectedMode){
         TimerMode.TOMATORO -> userSettings?.sessionTime?:TimerMode.TOMATORO.defaultDuration
@@ -77,76 +78,38 @@ fun TimerScreen(
             timerViewModel.resetTimer(seconds =initialTime * 60L, manual = false)
         }
     }
-
-    Column(
+    Box(
         modifier = Modifier
             .padding(bottom=80.dp)
             .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
+        contentAlignment = Alignment.Center
     ){
         ModeSelectorComponent(
             isRunning=isRunning,
             selectedMode=selectedMode,
-            onModeChange={ newMode-> selectedMode = newMode}
+            onModeChange={ newMode-> selectedMode = newMode},
+            modifier = Modifier
+                    .align(Alignment.TopCenter)
         )
 
         TimerComponent(
+            isRunning = isRunning,
             timeLeft = timeLeft,
             initialTime = timerViewModel.currentFullTime ?: timeLeft,
-            modifier = Modifier
-                .weight(1f)
+            onStartPause = { timerViewModel.onStartPausePressed(timeLeft = timeLeft, mode=selectedMode) },
+            onReset = { timerViewModel.onResetPressed(resetTime = currentTime*60L) },
         )
-
-        TimerButtonsComponent(
-            isRunning=isRunning,
-            onStartPause = { timerViewModel.onStartPausePressed(timeLeft = timeLeft, modeString=selectedModeString) },
-            onReset = { timerViewModel.onResetPressed(resetTime = currentTime*60L) }
-        )
-
-
     }
 }
 
-@Composable
-fun TimerButtonsComponent(
-    isRunning: Boolean,
-    onStartPause: () -> Unit,
-    onReset: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
-        horizontalArrangement = Arrangement.Center,
-    ){
-        OutlinedButton(
-            onClick = { onStartPause() },
-            modifier = Modifier.padding(horizontal=10.dp)
-        ) {
-            Icon(
-                imageVector = if(isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = null
-            )
-            Text(if(isRunning) "PAUSE" else "START")
-        }
-
-        Button(
-            onClick= { onReset() },
-            modifier = Modifier.padding(horizontal=10.dp)
-            ) {
-            Icon(
-                imageVector = Icons.Default.Refresh,
-                contentDescription = null
-            )
-            Text("RESET")
-        }
-    }
-}
 
 @Composable
 fun TimerComponent(
+    isRunning: Boolean,
     timeLeft: Long,
     initialTime: Long,
-    modifier: Modifier = Modifier
+    onStartPause: () -> Unit,
+    onReset: () -> Unit,
 ){
     val animatedProgress by animateFloatAsState(
         targetValue = if (initialTime>0) { timeLeft.toFloat() / initialTime.toFloat() } else { 1f },
@@ -154,7 +117,7 @@ fun TimerComponent(
     )
 
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .padding(32.dp)
             .aspectRatio(1f),
@@ -177,8 +140,33 @@ fun TimerComponent(
         }
         Text(
             text = TimerViewModel.formatTime(timeLeft),
-            style = MaterialTheme.typography.displayLarge
+            style = MaterialTheme.typography.displayLarge,
         )
+
+
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 40.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onStartPause) {
+                Icon(
+                    imageVector = if (isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp)
+                )
+            }
+
+            IconButton(onClick = onReset) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp)
+                )
+            }
+        }
     }
 
 }
@@ -187,27 +175,36 @@ fun TimerComponent(
 fun ModeSelectorComponent(
     isRunning: Boolean,
     selectedMode: TimerMode,
-    onModeChange: (TimerMode) -> Unit
+    onModeChange: (TimerMode) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     AnimatedVisibility(
         visible = !isRunning,
         enter = fadeIn() + expandVertically(),
         exit = fadeOut() + shrinkVertically(),
+        modifier=modifier
     ){
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.background,
+            border = BorderStroke(1.dp, Color.Red),
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
         ){
-            TimerMode.entries.forEach { mode->
-                FilterChip(
-                    selected = selectedMode==mode,
-                    onClick = {
-                        if (!isRunning){
-                            onModeChange(mode)
-                        }
-                    },
-                    label = { Text( text = stringResource(mode.title))}
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ){
+                TimerMode.entries.forEach { mode->
+                    FilterChip(
+                        selected = selectedMode==mode,
+                        onClick = {
+                            if (!isRunning){
+                                onModeChange(mode)
+                            }
+                        },
+                        label = { Text( text = stringResource(mode.title))}
+                    )
+                }
             }
         }
     }
