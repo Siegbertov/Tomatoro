@@ -1,6 +1,7 @@
 package com.s1g1.tomatoro.ui
 
 import android.os.CountDownTimer
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,7 +28,7 @@ class TimerViewModel : ViewModel(){
             currentFullTime = initialSeconds
             currentModeString = modeString
         }
-        println("STARTED at ${getCurrentFormattedTime()} - $currentModeString - $currentFullTime")
+        Log.d(TAG, "STARTED at ${getCurrentFormattedTime()} - $currentModeString - $currentFullTime")
 
         _isRunning.value = true
         countDownTimer = object : CountDownTimer(initialSeconds*1000, 1000){
@@ -36,7 +37,7 @@ class TimerViewModel : ViewModel(){
             }
 
             override fun onFinish() {
-                println("CONGRATULATION: passed $currentModeString with $currentFullTime at ${getCurrentFormattedTime()}")
+                Log.d(TAG, "CONGRATULATION: passed $currentModeString with $currentFullTime at ${getCurrentFormattedTime()}")
                 _timeLeft.value = 0
                 _isRunning.value = false
                 resetFullTimeAndMode()
@@ -46,7 +47,7 @@ class TimerViewModel : ViewModel(){
 
     fun pauseTimer(callFromReset: Boolean = false){
         if (!callFromReset){
-            println("PAUSED at ${getCurrentFormattedTime()} - $currentModeString - $currentFullTime")
+            Log.d(TAG, "PAUSED at ${getCurrentFormattedTime()} - $currentModeString - $currentFullTime")
         }
         _isRunning.value = false
         countDownTimer?.cancel()
@@ -54,7 +55,7 @@ class TimerViewModel : ViewModel(){
 
     fun resetTimer(seconds: Long, manual: Boolean = true){
         if (manual){
-            println("RESET at ${getCurrentFormattedTime()} - $currentModeString - $currentFullTime")
+            Log.d(TAG, "RESET at ${getCurrentFormattedTime()} - $currentModeString - $currentFullTime")
         }
         pauseTimer(callFromReset = true)
         _timeLeft.value = seconds
@@ -80,6 +81,7 @@ class TimerViewModel : ViewModel(){
     }
 
     companion object {
+        private const val TAG = "TimerLog"
         fun formatTime(seconds: Long): String {
             val minutes = seconds / 60
             val secs = seconds % 60
