@@ -3,12 +3,18 @@ package com.s1g1.tomatoro.ui
 import android.os.CountDownTimer
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.s1g1.tomatoro.TimerMode
+import com.s1g1.tomatoro.database.Session
+import com.s1g1.tomatoro.database.SessionRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
-class TimerViewModel : ViewModel(){
+class TimerViewModel(private val sessionRepository: SessionRepository) : ViewModel(){
 
     private val _timeLeft = MutableStateFlow(60L * 25)
     val timeLeft = _timeLeft.asStateFlow()
@@ -17,18 +23,18 @@ class TimerViewModel : ViewModel(){
     val isRunning = _isRunning.asStateFlow()
 
     var currentFullTime: Long? = null
-    var currentModeString: String? = null
+    var currentMode: TimerMode? = null
 
     private var countDownTimer: CountDownTimer? = null
 
-    fun startTimer(initialSeconds: Long, modeString: String){
+    fun startTimer(initialSeconds: Long, mode: TimerMode){
         if (_isRunning.value) return
 
         if (currentFullTime==null) {
             currentFullTime = initialSeconds
-            currentModeString = modeString
+            currentMode = mode
         }
-        Log.d(TAG, "STARTED at ${getCurrentFormattedTime()} - $currentModeString - $currentFullTime")
+        Log.d(TAG, "STARTED at ${getCurrentFormattedTime()} - ${currentMode?.name} - $currentFullTime")
 
         _isRunning.value = true
         countDownTimer = object : CountDownTimer(initialSeconds*1000, 1000){
@@ -37,8 +43,17 @@ class TimerViewModel : ViewModel(){
             }
 
             override fun onFinish() {
-                Log.d(TAG, "CONGRATULATION: passed $currentModeString with $currentFullTime at ${getCurrentFormattedTime()}")
-                _timeLeft.value = 0
+                Log.d(TAG, "CONGRATULATION: passed ${currentMode?.name} with $currentFullTime at ${getCurrentFormattedTime()}")
+
+                saveSessionToDatabase(
+                    Session(
+                        endTimestamp = System.currentTimeMillis(),
+                        mode = currentMode ?: TimerMode.getDefault(),
+                        duration = currentFullTime ?: 0L
+                    )
+                )
+
+                _timeLeft.value = currentFullTime ?: 0 // reset timer with same time as before
                 _isRunning.value = false
                 resetFullTimeAndMode()
             }
@@ -47,7 +62,7 @@ class TimerViewModel : ViewModel(){
 
     fun pauseTimer(callFromReset: Boolean = false){
         if (!callFromReset){
-            Log.d(TAG, "PAUSED at ${getCurrentFormattedTime()} - $currentModeString - $currentFullTime")
+            Log.d(TAG, "PAUSED at ${getCurrentFormattedTime()} - ${currentMode?.name} - $currentFullTime")
         }
         _isRunning.value = false
         countDownTimer?.cancel()
@@ -55,7 +70,7 @@ class TimerViewModel : ViewModel(){
 
     fun resetTimer(seconds: Long, manual: Boolean = true){
         if (manual){
-            Log.d(TAG, "RESET at ${getCurrentFormattedTime()} - $currentModeString - $currentFullTime")
+            Log.d(TAG, "RESET at ${getCurrentFormattedTime()} - ${currentMode?.name} - $currentFullTime")
         }
         pauseTimer(callFromReset = true)
         _timeLeft.value = seconds
@@ -64,11 +79,17 @@ class TimerViewModel : ViewModel(){
 
     private fun resetFullTimeAndMode(){
         currentFullTime = null
-        currentModeString = null
+        currentMode = null
     }
 
-    fun onStartPausePressed(timeLeft: Long, modeString: String){
-        if(_isRunning.value) pauseTimer() else startTimer(initialSeconds = timeLeft, modeString=modeString)
+    private fun saveSessionToDatabase(session: Session){
+        viewModelScope.launch(Dispatchers.IO){
+            sessionRepository.saveSession(session = session)
+        }
+    }
+
+    fun onStartPausePressed(timeLeft: Long, mode: TimerMode){
+        if(_isRunning.value) pauseTimer() else startTimer(initialSeconds = timeLeft, mode=mode)
     }
 
     fun onResetPressed(resetTime: Long){
