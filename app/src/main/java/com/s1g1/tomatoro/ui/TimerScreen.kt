@@ -1,18 +1,20 @@
 package com.s1g1.tomatoro.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -20,7 +22,9 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,18 +35,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.s1g1.tomatoro.UserSettings
 import com.s1g1.tomatoro.TimerMode
-import androidx.compose.material3.Surface
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 
 @Composable
 fun TimerScreen(
@@ -90,10 +91,10 @@ fun TimerScreen(
             onModeChange={ newMode-> selectedMode = newMode}
         )
 
-        ActualTimerComponent(
-            timeLeft=timeLeft,
+        TimerComponent(
+            timeLeft = timeLeft,
+            initialTime = timerViewModel.currentFullTime ?: timeLeft,
             modifier = Modifier
-                .fillMaxWidth()
                 .weight(1f)
         )
 
@@ -142,36 +143,44 @@ fun TimerButtonsComponent(
 }
 
 @Composable
-fun ActualTimerComponent(
+fun TimerComponent(
     timeLeft: Long,
+    initialTime: Long,
     modifier: Modifier = Modifier
-) {
+){
+    val animatedProgress by animateFloatAsState(
+        targetValue = if (initialTime>0) { timeLeft.toFloat() / initialTime.toFloat() } else { 1f },
+        animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec
+    )
+
     Box(
-        modifier = modifier,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(32.dp)
+            .aspectRatio(1f),
         contentAlignment = Alignment.Center
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal=10.dp),
-            color = Color(0xFFE0E0E0),
-            shape = RoundedCornerShape(24.dp)
-        ) {
-            Box(
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = TimerViewModel.formatTime(timeLeft),
-                    style = TextStyle(
-                        fontSize = 80.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace
-                    ),
-                    color=Color.Black
-                )
-            }
+    ){
+        Canvas(modifier = Modifier.fillMaxSize()){
+            val strokeWidth = 12.dp.toPx()
+            drawCircle(
+                color = Color.Black.copy(alpha = 0.5f),
+                style = Stroke(width = strokeWidth)
+            )
+
+            drawArc(
+                color = Color.Red.copy(alpha=0.75f),
+                startAngle = -90f,
+                sweepAngle = 360f * animatedProgress,
+                useCenter = false,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+            )
         }
+        Text(
+            text = TimerViewModel.formatTime(timeLeft),
+            style = MaterialTheme.typography.displayLarge
+        )
     }
+
 }
 
 @Composable
