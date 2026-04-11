@@ -4,10 +4,11 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.room.Room
 import com.s1g1.tomatoro.SettingsRepository
-import com.s1g1.tomatoro.SettingsViewModel
+import com.s1g1.tomatoro.ui.settings.SettingsViewModel
 import com.s1g1.tomatoro.database.AppDatabase
 import com.s1g1.tomatoro.database.SessionRepository
-import com.s1g1.tomatoro.ui.TimerViewModel
+import com.s1g1.tomatoro.ui.stats.StatsViewModel
+import com.s1g1.tomatoro.ui.timer.TimerViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -38,4 +39,7 @@ val appModule = module {
     single { SessionRepository(get()) }
 
     viewModel { TimerViewModel(get()) }
+
+    // STATS COMPONENT
+    viewModel { StatsViewModel(get()) }
 }

@@ -1,4 +1,4 @@
-package com.s1g1.tomatoro.ui
+package com.s1g1.tomatoro.ui.timer
 
 import android.os.CountDownTimer
 import android.util.Log

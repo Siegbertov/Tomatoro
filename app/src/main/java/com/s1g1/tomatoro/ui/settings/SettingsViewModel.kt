@@ -1,7 +1,8 @@
-package com.s1g1.tomatoro
+package com.s1g1.tomatoro.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.s1g1.tomatoro.SettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -11,7 +12,7 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     val settings = repository.settingsFlow.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000), // Держит поток активным 5 сек после ухода с экрана
+        started = SharingStarted.Companion.WhileSubscribed(5000), // Держит поток активным 5 сек после ухода с экрана
         initialValue = null // Начальное значение, пока данные грузятся
     )
 

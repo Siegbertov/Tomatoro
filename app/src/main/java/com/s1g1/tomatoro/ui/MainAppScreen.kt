@@ -9,8 +9,13 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.s1g1.tomatoro.SettingsViewModel
+import com.s1g1.tomatoro.ui.settings.SettingsViewModel
 import com.s1g1.tomatoro.UserSettings
+import com.s1g1.tomatoro.ui.settings.SettingsScreen
+import com.s1g1.tomatoro.ui.stats.StatsScreen
+import com.s1g1.tomatoro.ui.stats.StatsViewModel
+import com.s1g1.tomatoro.ui.timer.TimerScreen
+import com.s1g1.tomatoro.ui.timer.TimerViewModel
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -20,6 +25,7 @@ fun MainAppScreen(
 ) {
     val navController = rememberNavController()
     val timerViewModel: TimerViewModel = koinViewModel()
+    val statsViewModel: StatsViewModel = koinViewModel()
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = { SimpleTopBar() },
@@ -37,21 +43,22 @@ fun MainAppScreen(
             ){
             composable<Screen.Timer>{
                 TimerScreen(
-                    navController=navController,
-                    userSettings=userSettings,
-                    timerViewModel=timerViewModel
+                    navController = navController,
+                    userSettings = userSettings,
+                    timerViewModel = timerViewModel
                 )
             }
             composable<Screen.Stats>{
                 StatsScreen(
-                    navController=navController
+                    navController = navController,
+                    statsViewModel = statsViewModel
                 )
             }
             composable<Screen.Settings>{
                 SettingsScreen(
-                    navController=navController,
-                    settingsViewModel=settingsViewModel,
-                    userSettings=userSettings
+                    navController = navController,
+                    settingsViewModel = settingsViewModel,
+                    userSettings = userSettings
                 )
             }
         }

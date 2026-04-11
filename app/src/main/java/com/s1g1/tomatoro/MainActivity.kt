@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.s1g1.tomatoro.ui.MainAppScreen
+import com.s1g1.tomatoro.ui.settings.SettingsViewModel
 import com.s1g1.tomatoro.ui.theme.TomatoroTheme
 import org.koin.androidx.compose.koinViewModel
 

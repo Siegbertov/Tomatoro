@@ -1,4 +1,4 @@
-package com.s1g1.tomatoro.ui
+package com.s1g1.tomatoro.ui.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.s1g1.tomatoro.R
-import com.s1g1.tomatoro.SettingsViewModel
+import com.s1g1.tomatoro.ui.settings.SettingsViewModel
 import com.s1g1.tomatoro.TimerMode
 import com.s1g1.tomatoro.UserSettings
 
@@ -43,12 +43,7 @@ fun SettingsScreen(
     navController: NavHostController,
     settingsViewModel: SettingsViewModel,
     userSettings: UserSettings?
-) {
-    val currentRoute = navController.currentBackStackEntryAsState().value
-        ?.destination?.route
-        ?.substringAfterLast(".") ?: "Loading..."
-
-    val scrollState = rememberScrollState()
+) {    val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
             .verticalScroll(scrollState)

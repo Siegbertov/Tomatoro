@@ -1,4 +1,4 @@
-package com.s1g1.tomatoro.ui
+package com.s1g1.tomatoro.ui.timer
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
