@@ -1,13 +1,21 @@
 package com.s1g1.tomatoro.ui.timer
 
+import android.app.Application
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
+import android.os.Build
 import android.os.CountDownTimer
+import android.os.IBinder
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.s1g1.tomatoro.TimerMode
 import com.s1g1.tomatoro.database.Session
 import com.s1g1.tomatoro.database.SessionRepository
+import com.s1g1.tomatoro.service.TimerService
 import com.s1g1.tomatoro.triggerVibration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +24,13 @@ import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
-class TimerViewModel(private val sessionRepository: SessionRepository) : ViewModel(){
+class TimerViewModel(
+    private val sessionRepository: SessionRepository,
+    private val application: Application,
+) : ViewModel(){
+
+    private var timerService: TimerService? = null
+    private var isBound = false
 
     private val _timeLeft = MutableStateFlow(60L * 25)
     val timeLeft = _timeLeft.asStateFlow()
@@ -28,6 +42,38 @@ class TimerViewModel(private val sessionRepository: SessionRepository) : ViewMod
     var currentMode: TimerMode? = null
 
     private var countDownTimer: CountDownTimer? = null
+
+    private val serviceConnection = object : ServiceConnection{
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as TimerService.TimerBinder
+            timerService = binder.getService()
+            isBound = true
+
+            observeTimer()
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            timerService = null
+            isBound = false
+        }
+    }
+
+    private fun observeTimer(){
+        viewModelScope.launch {
+            timerService?.timeLeft?.collect { millis ->
+                _timeLeft.value = millis
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun startTimerService(duration: Long) {
+        val intent = Intent(application, TimerService::class.java).apply {
+            putExtra(TimerService.DURATION_EXTRA, duration)
+        }
+        application.startForegroundService(intent)
+        application.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+    }
 
     fun startTimer(initialSeconds: Long, context: Context, mode: TimerMode){
         if (_isRunning.value) return
@@ -108,7 +154,12 @@ class TimerViewModel(private val sessionRepository: SessionRepository) : ViewMod
 
     override fun onCleared() {
         super.onCleared()
-        countDownTimer?.cancel()
+        countDownTimer?.cancel() // TODO DELETE THIS IN FUTURE
+
+        if (isBound) {
+            application.unbindService(serviceConnection)
+            isBound = false
+        }
     }
 
     companion object {

@@ -30,7 +30,7 @@ class TimerService : Service(){
     override fun onBind(intent: Intent): IBinder = binder
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val duration = intent?.getLongExtra("DURATION", 0L) ?: 0L
+        val duration = intent?.getLongExtra(DURATION_EXTRA, 0L) ?: 0L
         startForegroundService(duration)
         return START_STICKY
     }
@@ -79,6 +79,8 @@ class TimerService : Service(){
 
     companion object {
         const val TIMER_CHANNEL_ID = "TIMER_CHANNEL"
+
+        const val DURATION_EXTRA = "DURATION"
     }
 
 }

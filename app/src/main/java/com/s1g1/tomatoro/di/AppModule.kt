@@ -9,6 +9,7 @@ import com.s1g1.tomatoro.database.AppDatabase
 import com.s1g1.tomatoro.database.SessionRepository
 import com.s1g1.tomatoro.ui.stats.StatsViewModel
 import com.s1g1.tomatoro.ui.timer.TimerViewModel
+import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -38,7 +39,11 @@ val appModule = module {
 
     single { SessionRepository(get()) }
 
-    viewModel { TimerViewModel(get()) }
+    viewModel { TimerViewModel(
+        sessionRepository = get(),
+        application = androidApplication()
+        )
+    }
 
     // STATS COMPONENT
     viewModel { StatsViewModel(get()) }
