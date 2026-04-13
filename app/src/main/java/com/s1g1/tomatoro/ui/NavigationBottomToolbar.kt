@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavGraph.Companion.findStartDestination
 
 @Composable
 fun NavigationBottomToolbar(
@@ -49,7 +50,13 @@ fun NavigationBottomToolbar(
                 Surface(
                     onClick = {
                         if(!isSelected){
-                            navController.navigate(item.route)
+                            navController.navigate(item.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
                               },
                     shape = CircleShape,
