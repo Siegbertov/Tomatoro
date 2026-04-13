@@ -2,12 +2,23 @@
     <string name="app_name">Tomatoro</string>
 
 
-    <string name="settings_duration">DURATIONS</string>
+    <string name="settings_duration">DURATION</string>
     <string name="tomatoro_session">TOMATORO</string>
     <string name="short_break_session">BREAK</string>
     <string name="long_break_session">LONG BREAK</string>
 
     <string name="dark_theme">DARK THEME</string>
+
+
+    <string name="color_themes">COLOR THEME</string>
+    <string name="color_red">RED</string>
+    <string name="color_green">GREEN</string>
+    <string name="color_blue">BLUE</string>
+    <string name="color_black">BLACK</string>
+    <string name="color_orange">ORANGE</string>
+    <string name="color_yellow">YELLOW</string>
+    <string name="color_purple">PURPLE</string>
+    <string name="color_pink">PINK</string>
 
 
 </resources>

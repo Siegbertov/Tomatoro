@@ -40,12 +40,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.currentBackStackEntryAsState
 import com.s1g1.tomatoro.UserSettings
 import com.s1g1.tomatoro.TimerMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import com.s1g1.tomatoro.MainThemeColors
 
 @Composable
 fun TimerScreen(
@@ -53,9 +53,9 @@ fun TimerScreen(
     userSettings: UserSettings?,
     timerViewModel: TimerViewModel
 ) {
-    val currentRoute = navController.currentBackStackEntryAsState().value
-        ?.destination?.route
-        ?.substringAfterLast(".") ?: "Loading..."
+    val currentMainThemeColor: MainThemeColors = MainThemeColors.fromName(
+        name = userSettings?.mainThemeColor ?: MainThemeColors.getDefault().name
+    )
 
     var selectedMode by remember { mutableStateOf(TimerMode.TOMATORO) }
 
@@ -87,6 +87,7 @@ fun TimerScreen(
         ModeSelectorComponent(
             isRunning=isRunning,
             selectedMode=selectedMode,
+            currentThemeColor = currentMainThemeColor.color,
             onModeChange={ newMode-> selectedMode = newMode},
             modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -94,6 +95,7 @@ fun TimerScreen(
 
         TimerComponent(
             isRunning = isRunning,
+            currentThemeColor = currentMainThemeColor.color,
             timeLeft = timeLeft,
             initialTime = timerViewModel.currentFullTime ?: timeLeft,
             onStartPause = { timerViewModel.onStartPausePressed(timeLeft = timeLeft, mode=selectedMode) },
@@ -110,6 +112,7 @@ fun TimerComponent(
     initialTime: Long,
     onStartPause: () -> Unit,
     onReset: () -> Unit,
+    currentThemeColor: Color,
 ){
     val animatedProgress by animateFloatAsState(
         targetValue = if (initialTime>0) { timeLeft.toFloat() / initialTime.toFloat() } else { 1f },
@@ -131,7 +134,7 @@ fun TimerComponent(
             )
 
             drawArc(
-                color = Color.Red.copy(alpha=0.75f),
+                color = currentThemeColor,
                 startAngle = -90f,
                 sweepAngle = 360f * animatedProgress,
                 useCenter = false,
@@ -176,7 +179,8 @@ fun ModeSelectorComponent(
     isRunning: Boolean,
     selectedMode: TimerMode,
     onModeChange: (TimerMode) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    currentThemeColor: Color
 ) {
     AnimatedVisibility(
         visible = !isRunning,
@@ -187,7 +191,7 @@ fun ModeSelectorComponent(
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.background,
-            border = BorderStroke(1.dp, Color.Red),
+            border = BorderStroke(1.dp, currentThemeColor),
             modifier = Modifier.fillMaxWidth().padding(16.dp)
         ){
             Row(

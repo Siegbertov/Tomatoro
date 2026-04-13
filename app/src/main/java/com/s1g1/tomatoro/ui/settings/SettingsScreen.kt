@@ -1,37 +1,47 @@
 package com.s1g1.tomatoro.ui.settings
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.s1g1.tomatoro.MainThemeColors
 import com.s1g1.tomatoro.R
 import com.s1g1.tomatoro.TimerMode
 import com.s1g1.tomatoro.UserSettings
@@ -53,7 +63,9 @@ fun SettingsScreen(
 
         ThemeSettingsComponent(
             userSettings=userSettings,
-            settingsViewModel=settingsViewModel
+            onToggleNewTheme = {switchedTheme->
+                settingsViewModel.updateTheme(newTheme = switchedTheme)
+            }
         )
 
         DurationSettingsComponent(
@@ -61,13 +73,90 @@ fun SettingsScreen(
             settingsViewModel=settingsViewModel
         )
 
+        MainThemeColorSelectorComponent(
+            userSettings=userSettings,
+            onToggleNewMainTheme= {
+                selectedMainColor ->
+                settingsViewModel.updateMainThemeColor(newMainColor = selectedMainColor)
+            }
+        )
+
+    }
+}
+
+@Composable
+fun MainThemeColorSelectorComponent(
+    userSettings: UserSettings?,
+    onToggleNewMainTheme: (String)-> Unit
+) {
+
+    val currentMainThemeColor: MainThemeColors = MainThemeColors.fromName(
+        name = userSettings?.mainThemeColor ?: MainThemeColors.getDefault().name
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical=10.dp, horizontal = 10.dp)
+    ){
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ){
+            Text(
+                text = "${stringResource(R.string.color_themes)}: ${stringResource(currentMainThemeColor.title)}",
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+            
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ){
+                LazyRow(
+                    modifier = Modifier.padding(8.dp)
+                ){
+
+                    items(MainThemeColors.entries){ themeItem ->
+                        val isSelected = currentMainThemeColor == themeItem
+                        OutlinedButton(
+                            onClick = { onToggleNewMainTheme( themeItem.name ) },
+                            modifier = Modifier
+                                .height(60.dp)
+                                .aspectRatio(1f)
+                                .padding(4.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            border = if (isSelected) {
+                                BorderStroke(4.dp, Color.White)
+                            } else {
+                                BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f))
+                            },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = themeItem.color
+                            ),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            if (isSelected) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Selected",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
 @Composable
 fun ThemeSettingsComponent(
     userSettings: UserSettings?,
-    settingsViewModel: SettingsViewModel
+    onToggleNewTheme: (Boolean) -> Unit
 ) {
     val isDarkTheme = userSettings?.isDarkMode ?: true
 
@@ -85,7 +174,7 @@ fun ThemeSettingsComponent(
 
             Switch(
                 checked = isDarkTheme,
-                onCheckedChange = { settingsViewModel.updateTheme(newTheme = !isDarkTheme) },
+                onCheckedChange = { onToggleNewTheme(!isDarkTheme) },
                 thumbContent = {
                     if (isDarkTheme) {
                         Icon(

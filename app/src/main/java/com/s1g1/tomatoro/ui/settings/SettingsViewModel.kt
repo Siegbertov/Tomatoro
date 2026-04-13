@@ -12,8 +12,8 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     val settings = repository.settingsFlow.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.Companion.WhileSubscribed(5000), // Держит поток активным 5 сек после ухода с экрана
-        initialValue = null // Начальное значение, пока данные грузятся
+        started = SharingStarted.Companion.WhileSubscribed(5000),
+        initialValue = null
     )
 
     fun updateTheme(newTheme: Boolean){
@@ -37,6 +37,12 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     fun updateLongBreakTime(newTime: Int){
         viewModelScope.launch(Dispatchers.IO) {
             repository.setLongBreakTime(newTime=newTime)
+        }
+    }
+
+    fun updateMainThemeColor(newMainColor: String){
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.setMainThemeColor(newMainColor = newMainColor)
         }
     }
 
