@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -25,7 +26,8 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 
 @Composable
 fun NavigationBottomToolbar(
-    navController: NavHostController
+    navController: NavHostController,
+    currentColor: Color
 ) {
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -69,16 +71,17 @@ fun NavigationBottomToolbar(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ){
                         Icon(
-                            imageVector = item.icon,
+                            imageVector = if(isSelected) item.iconFilled else item.iconOutlined,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(24.dp),
+                            tint = if(isSelected) currentColor.copy(alpha = 0.6f) else LocalContentColor.current
                         )
                         Text(
                             text = item.title,
                             fontWeight = FontWeight.Black,
                             fontSize = 12.sp,
                             style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            color = if(isSelected) currentColor.copy(alpha = 0.75f) else Color.Unspecified
                         )
                     }
                 }

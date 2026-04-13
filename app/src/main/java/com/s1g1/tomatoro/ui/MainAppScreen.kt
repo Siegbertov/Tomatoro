@@ -6,9 +6,11 @@ import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.s1g1.tomatoro.MainThemeColors
 import com.s1g1.tomatoro.ui.settings.SettingsViewModel
 import com.s1g1.tomatoro.UserSettings
 import com.s1g1.tomatoro.ui.settings.SettingsScreen
@@ -26,13 +28,19 @@ fun MainAppScreen(
     val navController = rememberNavController()
     val timerViewModel: TimerViewModel = koinViewModel()
     val statsViewModel: StatsViewModel = koinViewModel()
+    val currentColor: Color = MainThemeColors.fromName(
+        name = userSettings?.mainThemeColor ?: MainThemeColors.getDefault().name
+    ).color
+
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = { SimpleTopBar() },
         floatingActionButtonPosition = FabPosition.Center,
         floatingActionButton = {
             NavigationBottomToolbar(
-                navController=navController
+                navController=navController,
+                currentColor=currentColor
             )
         }
     ) { innerPadding ->
