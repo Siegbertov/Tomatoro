@@ -45,6 +45,7 @@ import com.s1g1.tomatoro.TimerMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import com.s1g1.tomatoro.MainThemeColors
 
 @Composable
@@ -53,6 +54,8 @@ fun TimerScreen(
     userSettings: UserSettings?,
     timerViewModel: TimerViewModel
 ) {
+
+    val context = LocalContext.current
     val currentMainThemeColor: MainThemeColors = MainThemeColors.fromName(
         name = userSettings?.mainThemeColor ?: MainThemeColors.getDefault().name
     )
@@ -98,7 +101,11 @@ fun TimerScreen(
             currentThemeColor = currentMainThemeColor.color,
             timeLeft = timeLeft,
             initialTime = timerViewModel.currentFullTime ?: timeLeft,
-            onStartPause = { timerViewModel.onStartPausePressed(timeLeft = timeLeft, mode=selectedMode) },
+            onStartPause = { timerViewModel.onStartPausePressed(
+                timeLeft = timeLeft,
+                context = context,
+                mode = selectedMode,
+            ) },
             onReset = { timerViewModel.onResetPressed(resetTime = currentTime*60L) },
         )
     }

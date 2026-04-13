@@ -1,5 +1,6 @@
 package com.s1g1.tomatoro.ui.timer
 
+import android.content.Context
 import android.os.CountDownTimer
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -7,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.s1g1.tomatoro.TimerMode
 import com.s1g1.tomatoro.database.Session
 import com.s1g1.tomatoro.database.SessionRepository
+import com.s1g1.tomatoro.triggerVibration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,7 +29,7 @@ class TimerViewModel(private val sessionRepository: SessionRepository) : ViewMod
 
     private var countDownTimer: CountDownTimer? = null
 
-    fun startTimer(initialSeconds: Long, mode: TimerMode){
+    fun startTimer(initialSeconds: Long, context: Context, mode: TimerMode){
         if (_isRunning.value) return
 
         if (currentFullTime==null) {
@@ -44,6 +46,8 @@ class TimerViewModel(private val sessionRepository: SessionRepository) : ViewMod
 
             override fun onFinish() {
                 Log.d(TAG, "CONGRATULATION: passed ${currentMode?.name} with $currentFullTime at ${getCurrentFormattedTime()}")
+
+                triggerVibration(context=context)
 
                 saveSessionToDatabase(
                     Session(
@@ -88,8 +92,8 @@ class TimerViewModel(private val sessionRepository: SessionRepository) : ViewMod
         }
     }
 
-    fun onStartPausePressed(timeLeft: Long, mode: TimerMode){
-        if(_isRunning.value) pauseTimer() else startTimer(initialSeconds = timeLeft, mode=mode)
+    fun onStartPausePressed(timeLeft: Long, context: Context, mode: TimerMode){
+        if(_isRunning.value) pauseTimer() else startTimer(initialSeconds = timeLeft, context=context, mode=mode)
     }
 
     fun onResetPressed(resetTime: Long){
