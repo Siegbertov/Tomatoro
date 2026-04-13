@@ -92,6 +92,12 @@ class TimerViewModel(private val sessionRepository: SessionRepository) : ViewMod
         }
     }
 
+    fun deleteSessionFromDatabase(session: Session){
+        viewModelScope.launch(Dispatchers.IO){
+            sessionRepository.deleteSession(session = session)
+        }
+    }
+
     fun onStartPausePressed(timeLeft: Long, context: Context, mode: TimerMode){
         if(_isRunning.value) pauseTimer() else startTimer(initialSeconds = timeLeft, context=context, mode=mode)
     }

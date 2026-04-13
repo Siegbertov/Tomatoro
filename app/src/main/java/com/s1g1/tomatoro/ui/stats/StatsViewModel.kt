@@ -9,6 +9,7 @@ import com.s1g1.tomatoro.database.SessionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -22,6 +23,12 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+    private val _showAllDisplay = MutableStateFlow(false)
+    val showAllDisplay = _showAllDisplay.asStateFlow()
+
+    fun ToggleAllSessionDisplay(){
+        _showAllDisplay.value = !_showAllDisplay.value
+    }
 
     // TODO DAY COMPONENTS
     private val dayOffset = MutableStateFlow(0) // 0 - today... -1 - yesterday...
