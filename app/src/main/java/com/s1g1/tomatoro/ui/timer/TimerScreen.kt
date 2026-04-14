@@ -1,5 +1,14 @@
 package com.s1g1.tomatoro.ui.timer
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import android.widget.Toast
+import android.net.Uri
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
@@ -39,48 +48,70 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
 import com.s1g1.tomatoro.UserSettings
 import com.s1g1.tomatoro.TimerMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import com.s1g1.tomatoro.MainThemeColors
+import com.s1g1.tomatoro.service.TimerService
 
 @Composable
 fun TimerScreen(
-    navController: NavHostController,
     userSettings: UserSettings?,
     timerViewModel: TimerViewModel
 ) {
 
     val context = LocalContext.current
-    val currentMainThemeColor: MainThemeColors = MainThemeColors.fromName(
+
+    val currentMainThemeColor: Color = MainThemeColors.fromName(
         name = userSettings?.mainThemeColor ?: MainThemeColors.getDefault().name
-    )
+    ).color
 
     var selectedMode by remember { mutableStateOf(TimerMode.TOMATORO) }
 
-    val currentTime = when(selectedMode){
+    val currentSeconds = when(selectedMode){
         TimerMode.TOMATORO -> userSettings?.sessionTime?:TimerMode.TOMATORO.defaultDuration
         TimerMode.BREAK -> userSettings?.shortBreakTime?:TimerMode.BREAK.defaultDuration
         TimerMode.LONG_BREAK -> userSettings?.longBreakTime?:TimerMode.LONG_BREAK.defaultDuration
-    }
+    }  * 60L
 
-    val timeLeft by timerViewModel.timeLeft.collectAsStateWithLifecycle()
+    val secondsLeft by timerViewModel.secondsLeft.collectAsStateWithLifecycle()
     val isRunning by timerViewModel.isRunning.collectAsStateWithLifecycle()
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            timerViewModel.onAction(TimerAction.START, durationSeconds = secondsLeft)
+        } else {
+            Toast.makeText(context, "PERMISSION FOR NOTIFICATION", Toast.LENGTH_SHORT).show()
+
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", context.packageName, null)
+            }
+            context.startActivity(intent)
+
+        }
+    }
 
     LaunchedEffect(userSettings, selectedMode){
         if (!isRunning){
-            val initialTime = when(selectedMode){
+            val durationSeconds = when(selectedMode){
                 TimerMode.TOMATORO -> userSettings?.sessionTime?:TimerMode.TOMATORO.defaultDuration
                 TimerMode.BREAK -> userSettings?.shortBreakTime?:TimerMode.BREAK.defaultDuration
                 TimerMode.LONG_BREAK -> userSettings?.longBreakTime?:TimerMode.LONG_BREAK.defaultDuration
-            }
-            timerViewModel.resetTimer(seconds =initialTime * 60L, manual = false)
+            } * 60L
+            timerViewModel.onAction(
+                action = TimerAction.RESET,
+                durationSeconds=durationSeconds,
+                mode = selectedMode
+                )
         }
     }
+
     Box(
         modifier = Modifier
             .padding(bottom=80.dp)
@@ -90,7 +121,7 @@ fun TimerScreen(
         ModeSelectorComponent(
             isRunning=isRunning,
             selectedMode=selectedMode,
-            currentThemeColor = currentMainThemeColor.color,
+            currentThemeColor = currentMainThemeColor,
             onModeChange={ newMode-> selectedMode = newMode},
             modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -98,15 +129,39 @@ fun TimerScreen(
 
         TimerComponent(
             isRunning = isRunning,
-            currentThemeColor = currentMainThemeColor.color,
-            timeLeft = timeLeft,
-            initialTime = timerViewModel.currentFullTime ?: timeLeft,
-            onStartPause = { timerViewModel.onStartPausePressed(
-                timeLeft = timeLeft,
-                context = context,
-                mode = selectedMode,
-            ) },
-            onReset = { timerViewModel.onResetPressed(resetTime = currentTime*60L) },
+            currentThemeColor = currentMainThemeColor,
+            secondsLeft = secondsLeft,
+            initialTime = timerViewModel.currentFullSeconds.value ?: secondsLeft,
+            onStartPause = {
+                if (isRunning) {
+                    timerViewModel.onAction(TimerAction.PAUSE)
+                } else {
+                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
+                        val isPermissionGranted = ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.POST_NOTIFICATIONS
+                        ) == PackageManager.PERMISSION_GRANTED
+                        if (isPermissionGranted){
+                            // START
+                            timerViewModel.onAction(TimerAction.START, durationSeconds = secondsLeft)
+                        } else {
+                            // REQUEST PERMISSION + START
+                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    } else {
+                        // NO NEED FOR PERMISSION
+                        timerViewModel.onAction(TimerAction.START, durationSeconds = secondsLeft)
+                    }
+
+                }
+            },
+            onReset = {
+                timerViewModel.onAction(
+                    action = TimerAction.RESET,
+                    durationSeconds = currentSeconds,
+                    mode = selectedMode
+                )
+            },
         )
     }
 }
@@ -115,14 +170,14 @@ fun TimerScreen(
 @Composable
 fun TimerComponent(
     isRunning: Boolean,
-    timeLeft: Long,
+    secondsLeft: Long,
     initialTime: Long,
     onStartPause: () -> Unit,
     onReset: () -> Unit,
     currentThemeColor: Color,
 ){
     val animatedProgress by animateFloatAsState(
-        targetValue = if (initialTime>0) { timeLeft.toFloat() / initialTime.toFloat() } else { 1f },
+        targetValue = if (initialTime>0) { secondsLeft.toFloat() / initialTime.toFloat() } else { 1f },
         animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec
     )
 
@@ -149,7 +204,7 @@ fun TimerComponent(
             )
         }
         Text(
-            text = TimerViewModel.formatTime(timeLeft),
+            text = TimerService.formatTime(secondsLeft),
             style = MaterialTheme.typography.displayLarge,
         )
 

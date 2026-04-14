@@ -47,7 +47,6 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun StatsScreen(
-    navController: NavHostController,
     statsViewModel: StatsViewModel,
     onSessionDelete: (Session)-> Unit,
 ) {

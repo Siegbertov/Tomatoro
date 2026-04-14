@@ -48,7 +48,6 @@ import com.s1g1.tomatoro.UserSettings
 
 @Composable
 fun SettingsScreen(
-    navController: NavHostController,
     settingsViewModel: SettingsViewModel,
     userSettings: UserSettings?
 ) {    val scrollState = rememberScrollState()

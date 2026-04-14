@@ -51,21 +51,18 @@ fun MainAppScreen(
             ){
             composable<Screen.Timer>{
                 TimerScreen(
-                    navController = navController,
                     userSettings = userSettings,
                     timerViewModel = timerViewModel
                 )
             }
             composable<Screen.Stats>{
                 StatsScreen(
-                    navController = navController,
                     statsViewModel = statsViewModel,
                     onSessionDelete = { selectedSession -> timerViewModel.deleteSessionFromDatabase(session = selectedSession) }
                 )
             }
             composable<Screen.Settings>{
                 SettingsScreen(
-                    navController = navController,
                     settingsViewModel = settingsViewModel,
                     userSettings = userSettings
                 )
