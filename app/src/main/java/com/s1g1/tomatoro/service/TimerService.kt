@@ -14,15 +14,25 @@ import androidx.core.app.NotificationCompat
 import com.s1g1.tomatoro.MainActivity
 import com.s1g1.tomatoro.R
 import com.s1g1.tomatoro.TimerMode
+import com.s1g1.tomatoro.database.Session
+import com.s1g1.tomatoro.database.SessionRepository
 import com.s1g1.tomatoro.triggerVibration
 import com.s1g1.tomatoro.ui.timer.TimerAction
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import org.koin.core.component.KoinComponent
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import org.koin.core.component.inject
+import java.util.Locale
 
 
-class TimerService : Service(){
+class TimerService : Service(), KoinComponent {
     companion object {
         fun getCurrentFormattedTime(): String{
             return LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
@@ -30,9 +40,9 @@ class TimerService : Service(){
         fun formatTime(seconds: Long): String {
             val minutes = seconds / 60
             val secs = seconds % 60
-            return String.format(java.util.Locale.getDefault(), "%02d:%02d", minutes, secs)
+            return String.format(Locale.getDefault(), "%02d:%02d", minutes, secs)
         }
-        private const val TAG = "TimerLog"
+        private const val TAG = "TimerService"
         private const val NOTIFICATION_ID = 1
         const val TIMER_CHANNEL_ID = "TIMER_CHANNEL"
         const val TIMER_CHANNEL_NAME = "Timer Notifications"
@@ -52,6 +62,9 @@ class TimerService : Service(){
         private val _currentModeName = MutableStateFlow(TimerMode.getDefault().name)
         val currentModeName = _currentModeName.asStateFlow()
     }
+
+    private val repository: SessionRepository by inject()
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private var timer: CountDownTimer? = null
 
@@ -103,14 +116,24 @@ class TimerService : Service(){
             }
             override fun onFinish() {
                 val name: String = getString(TimerMode.fromName(_currentModeName.value).title)
-                Log.d(TAG, "FINISH - ${getCurrentFormattedTime()} - ${_currentFullSeconds.value} - $name")
+
+                saveSessionToDatabase(
+                    session = Session(
+                        endTimestamp = System.currentTimeMillis(),
+                        mode = TimerMode.fromName(name = _currentModeName.value),
+                        duration = _currentFullSeconds.value ?: TimerMode.fromName(name = _currentModeName.value).defaultDuration.toLong()
+                    )
+                )
+
                 updateNotification(
                     newMessage = "DONE: $name",
                     isFinal = true
                 )
+
                 _isRunning.value = false
                 _secondsLeft.value = _currentFullSeconds.value ?: 0L
                 _currentFullSeconds.value = null
+
                 triggerVibration(this@TimerService)
                 stopForeground(STOP_FOREGROUND_DETACH)
                 stopSelf()
@@ -147,6 +170,17 @@ class TimerService : Service(){
 
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(NOTIFICATION_ID, notification)
+    }
+
+    private fun saveSessionToDatabase(session: Session){
+        serviceScope.launch {
+            try{
+                repository.saveSession(session = session)
+                Log.d(TAG, "FINISH - ${getCurrentFormattedTime()} - ${_currentFullSeconds.value} - ${getString(TimerMode.fromName(_currentModeName.value).title)}")
+            } catch (e: Exception){
+                Log.d(TAG, "Failed to save session", e)
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -190,6 +224,7 @@ class TimerService : Service(){
     }
 
     override fun onDestroy() {
+        serviceScope.cancel()
         timer?.cancel()
         super.onDestroy()
     }

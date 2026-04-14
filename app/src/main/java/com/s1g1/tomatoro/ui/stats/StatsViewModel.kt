@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.s1g1.tomatoro.database.Session
 import com.s1g1.tomatoro.database.SessionRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 class StatsViewModel(private val sessionRepository: SessionRepository): ViewModel() {
@@ -26,8 +28,14 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
     private val _showAllDisplay = MutableStateFlow(false)
     val showAllDisplay = _showAllDisplay.asStateFlow()
 
-    fun ToggleAllSessionDisplay(){
+    fun onToggleAllSessionDisplay(){
         _showAllDisplay.value = !_showAllDisplay.value
+    }
+
+    fun deleteSessionFromDatabase(session: Session){
+        viewModelScope.launch(Dispatchers.IO){
+            sessionRepository.deleteSession(session = session)
+        }
     }
 
     // TODO DAY COMPONENTS

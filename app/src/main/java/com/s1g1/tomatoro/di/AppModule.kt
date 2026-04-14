@@ -40,7 +40,6 @@ val appModule = module {
     single { SessionRepository(get()) }
 
     viewModel { TimerViewModel(
-        sessionRepository = get(),
         application = androidApplication()
         )
     }

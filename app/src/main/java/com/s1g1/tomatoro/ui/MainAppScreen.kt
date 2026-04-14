@@ -57,8 +57,7 @@ fun MainAppScreen(
             }
             composable<Screen.Stats>{
                 StatsScreen(
-                    statsViewModel = statsViewModel,
-                    onSessionDelete = { selectedSession -> timerViewModel.deleteSessionFromDatabase(session = selectedSession) }
+                    statsViewModel = statsViewModel
                 )
             }
             composable<Screen.Settings>{

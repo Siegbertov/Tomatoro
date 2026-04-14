@@ -18,7 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
 import com.s1g1.tomatoro.TimerMode
 import com.s1g1.tomatoro.database.Session
 import java.time.Instant
@@ -47,8 +46,7 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun StatsScreen(
-    statsViewModel: StatsViewModel,
-    onSessionDelete: (Session)-> Unit,
+    statsViewModel: StatsViewModel
 ) {
     val scrollState = rememberScrollState()
     val showAllDisplay by statsViewModel.showAllDisplay.collectAsStateWithLifecycle()
@@ -107,12 +105,12 @@ fun StatsScreen(
             )
             
             StorageRow(
-                onStorageClick = { statsViewModel.ToggleAllSessionDisplay() }
+                onStorageClick = { statsViewModel.onToggleAllSessionDisplay() }
             )
         }
         if (showAllDisplay){
             Dialog(
-                onDismissRequest = {statsViewModel.ToggleAllSessionDisplay()}
+                onDismissRequest = {statsViewModel.onToggleAllSessionDisplay()}
             ){
                 LazyColumn(
                     verticalArrangement = Arrangement.Center,
@@ -132,9 +130,9 @@ fun StatsScreen(
                             Text( text = currentSession.duration.toString() )
                             Spacer(modifier = Modifier.weight(1f))
                             IconButton(onClick = {
-                                onSessionDelete(currentSession)
+                                statsViewModel.deleteSessionFromDatabase(session = currentSession)
                             }){
-                                Icon(imageVector = Icons.Default.Clear, contentDescription = null)
+                                Icon(imageVector = Icons.Default.Delete, contentDescription = null)
                             }
                         }
                     }
