@@ -1,7 +1,9 @@
 package com.s1g1.tomatoro.service
 
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.os.Build
@@ -9,6 +11,7 @@ import android.os.CountDownTimer
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.s1g1.tomatoro.MainActivity
 import com.s1g1.tomatoro.R
 import com.s1g1.tomatoro.TimerMode
 import com.s1g1.tomatoro.triggerVibration
@@ -32,6 +35,8 @@ class TimerService : Service(){
         private const val TAG = "TimerLog"
         private const val NOTIFICATION_ID = 1
         const val TIMER_CHANNEL_ID = "TIMER_CHANNEL"
+        const val TIMER_CHANNEL_NAME = "Timer Notifications"
+
         const val DURATION_EXTRA = "DURATION"
         const val MODE_EXTRA = "MODE"
 
@@ -57,6 +62,16 @@ class TimerService : Service(){
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    this,
+                    0,
+                    Intent(this, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    },
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                )
+            )
     }
 
     override fun onBind(intent: Intent): IBinder? = null
@@ -65,7 +80,7 @@ class TimerService : Service(){
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 TIMER_CHANNEL_ID,
-                "Timer Notifications",
+                TIMER_CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_HIGH
             )
             val manager = getSystemService(NotificationManager::class.java)
@@ -82,13 +97,16 @@ class TimerService : Service(){
         timer = object : CountDownTimer(durationSeconds*1000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 _secondsLeft.value = millisUntilFinished / 1000
-                updateNotification(newMessage = formatTime(seconds = _secondsLeft.value))
+                updateNotification(
+                    newMessage = formatTime(seconds = _secondsLeft.value)
+                )
             }
             override fun onFinish() {
                 val name: String = getString(TimerMode.fromName(_currentModeName.value).title)
                 Log.d(TAG, "FINISH - ${getCurrentFormattedTime()} - ${_currentFullSeconds.value} - $name")
                 updateNotification(
-                    newMessage = "DONE: $name"
+                    newMessage = "DONE: $name",
+                    isFinal = true
                 )
                 _isRunning.value = false
                 _secondsLeft.value = _currentFullSeconds.value ?: 0L
@@ -100,8 +118,32 @@ class TimerService : Service(){
         }.start()
     }
 
-    private fun updateNotification(newMessage: String){
-        val notification = notificationBuilder.setContentText(newMessage).build()
+    @SuppressLint("FullScreenIntentPolicy")
+    private fun updateNotification(
+        newMessage: String,
+        isFinal: Boolean = false
+    ){
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val notification = notificationBuilder
+            .setContentText(newMessage)
+            .setOnlyAlertOnce(!isFinal)
+            .apply{
+                if (isFinal){
+                    setCategory(NotificationCompat.CATEGORY_ALARM)
+                    setPriority(NotificationCompat.PRIORITY_MAX)
+                    setDefaults(NotificationCompat.DEFAULT_ALL)
+                    setFullScreenIntent(pendingIntent, true)
+                }
+            }
+            .build()
 
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(NOTIFICATION_ID, notification)
@@ -125,7 +167,6 @@ class TimerService : Service(){
             }
             TimerAction.PAUSE.name -> {
                 Log.d(TAG, "$actionName - ${getCurrentFormattedTime()}")
-                updateNotification(newMessage = "PAUSED: ${formatTime(seconds = _secondsLeft.value)}")
                 _isRunning.value = false
                 timer?.cancel()
             }
