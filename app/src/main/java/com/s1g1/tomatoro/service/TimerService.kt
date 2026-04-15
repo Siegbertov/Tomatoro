@@ -7,7 +7,6 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.os.Build
-import android.os.CountDownTimer
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -20,8 +19,10 @@ import com.s1g1.tomatoro.triggerVibration
 import com.s1g1.tomatoro.ui.timer.TimerAction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -64,10 +65,12 @@ class TimerService : Service(), KoinComponent {
     }
 
     private val repository: SessionRepository by inject()
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var timerJob: Job? = null
 
-    private var timer: CountDownTimer? = null
-
+    private val notificationManager by lazy {
+        getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+    }
     private val notificationBuilder by lazy {
         NotificationCompat.Builder(this, TIMER_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_timer)
@@ -104,41 +107,43 @@ class TimerService : Service(), KoinComponent {
         // CREATES NOTIFICATION CHANNEL (for API 26+)
         createNotificationChannel()
         // START FOREGROUND
-        startForeground(1, notificationBuilder.setContentText("START...").build())
-        // START TIMER
-        timer?.cancel()
-        timer = object : CountDownTimer(durationSeconds*1000, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                _secondsLeft.value = millisUntilFinished / 1000
-                updateNotification(
-                    newMessage = formatTime(seconds = _secondsLeft.value)
-                )
+        startForeground(NOTIFICATION_ID, notificationBuilder.setContentText("START...").build())
+
+        //MY PERSONAL TIMER (cancel previous)
+        timerJob?.cancel()
+
+        //MY PERSONAL TIMER (start new)
+        timerJob = serviceScope.launch {
+            // SETTING UP
+            if(_secondsLeft.value == 0L){
+                _secondsLeft.value = durationSeconds
             }
-            override fun onFinish() {
-                val name: String = getString(TimerMode.fromName(_currentModeName.value).title)
-
-                saveSessionToDatabase(
-                    session = Session(
-                        endTimestamp = System.currentTimeMillis(),
-                        mode = TimerMode.fromName(name = _currentModeName.value),
-                        duration = _currentFullSeconds.value ?: TimerMode.fromName(name = _currentModeName.value).defaultDuration.toLong()
-                    )
-                )
-
-                updateNotification(
-                    newMessage = "DONE: $name",
-                    isFinal = true
-                )
-
-                _isRunning.value = false
-                _secondsLeft.value = _currentFullSeconds.value ?: 0L
-                _currentFullSeconds.value = null
-
-                triggerVibration(this@TimerService)
-                stopForeground(STOP_FOREGROUND_DETACH)
-                stopSelf()
+            // TICKING
+            while (_secondsLeft.value > 0){
+                delay(timeMillis = 1000L)
+                _secondsLeft.value -= 1
+                updateNotification( newMessage = formatTime(seconds = _secondsLeft.value) )
             }
-        }.start()
+            // FINISHED
+            val name: String = getString(TimerMode.fromName(_currentModeName.value).title)
+            saveSessionToDatabase(
+                session = Session(
+                    endTimestamp = System.currentTimeMillis(),
+                    mode = TimerMode.fromName(name = _currentModeName.value),
+                    duration = _currentFullSeconds.value ?: TimerMode.fromName(name = _currentModeName.value).defaultDuration.toLong()
+                )
+            )
+            // UPDATE LAST NOTIFICATION
+            updateNotification( newMessage = "DONE: $name", isFinal = true )
+
+            _isRunning.value = false
+            _secondsLeft.value = _currentFullSeconds.value ?: 0L
+            _currentFullSeconds.value = null
+
+            triggerVibration(this@TimerService)
+            stopForeground(STOP_FOREGROUND_DETACH)
+            stopSelf()
+        }
     }
 
     @SuppressLint("FullScreenIntentPolicy")
@@ -168,12 +173,11 @@ class TimerService : Service(), KoinComponent {
             }
             .build()
 
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
     private fun saveSessionToDatabase(session: Session){
-        serviceScope.launch {
+        serviceScope.launch(Dispatchers.IO) {
             try{
                 repository.saveSession(session = session)
                 Log.d(TAG, "FINISH - ${getCurrentFormattedTime()} - ${_currentFullSeconds.value} - ${getString(TimerMode.fromName(_currentModeName.value).title)}")
@@ -191,32 +195,29 @@ class TimerService : Service(), KoinComponent {
         when(actionName){
             TimerAction.START.name -> {
                 Log.d(TAG, "$actionName - ${getCurrentFormattedTime()} - $durationSeconds")
-
                 if (_currentFullSeconds.value == null) {
                     _currentFullSeconds.value = durationSeconds
                 }
-
                 _isRunning.value = true
                 startForegroundService(durationSeconds=durationSeconds)
             }
             TimerAction.PAUSE.name -> {
                 Log.d(TAG, "$actionName - ${getCurrentFormattedTime()}")
                 _isRunning.value = false
-                timer?.cancel()
+                timerJob?.cancel()
             }
             TimerAction.RESET.name -> {
                 Log.d(TAG, "$actionName - ${getCurrentFormattedTime()} - $durationSeconds")
                 _isRunning.value = false
 
-                timer?.cancel()
+                timerJob?.cancel()
+
                 _secondsLeft.value = durationSeconds
                 _currentModeName.value = modeName
-
                 _currentFullSeconds.value = null
-
                 stopForeground(STOP_FOREGROUND_REMOVE)
-                val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-                notificationManager.cancel(1)
+
+                notificationManager.cancel(NOTIFICATION_ID)
                 stopSelf()
             }
         }
@@ -225,7 +226,7 @@ class TimerService : Service(), KoinComponent {
 
     override fun onDestroy() {
         serviceScope.cancel()
-        timer?.cancel()
+        timerJob?.cancel()
         super.onDestroy()
     }
 }
