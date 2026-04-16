@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,13 +35,14 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavHostController
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.s1g1.tomatoro.MainThemeColors
 import com.s1g1.tomatoro.R
 import com.s1g1.tomatoro.TimerMode
@@ -50,15 +52,31 @@ import com.s1g1.tomatoro.UserSettings
 fun SettingsScreen(
     settingsViewModel: SettingsViewModel,
     userSettings: UserSettings?
-) {    val scrollState = rememberScrollState()
+) {
+    val scrollState = rememberScrollState()
+    val isNotificationAllowed by settingsViewModel.isNotificationAllowed.collectAsStateWithLifecycle()
+    val isRunInBackgroundAllowed by settingsViewModel.isRunInBackgroundAllowed.collectAsStateWithLifecycle()
+
     Column(
         modifier = Modifier
             .verticalScroll(scrollState)
-            .padding(bottom=80.dp)
+            .padding(bottom = 80.dp)
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ){
+
+        PermissionAllowComponent(
+            isAllowed = isNotificationAllowed,
+            title = stringResource(R.string.allow_notifications),
+            onClick = { settingsViewModel.onNotificationClick() }
+        )
+
+        PermissionAllowComponent(
+            isAllowed = isRunInBackgroundAllowed,
+            title = stringResource(R.string.allow_run_in_background),
+            onClick = { settingsViewModel.onRunInBackgroundClick() }
+        )
 
         ThemeSettingsComponent(
             userSettings=userSettings,
@@ -84,6 +102,32 @@ fun SettingsScreen(
 }
 
 @Composable
+fun PermissionAllowComponent(
+    isAllowed: Boolean,
+    title: String,
+    onClick: ()->Unit,
+) {
+    if(!isAllowed){
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 10.dp, horizontal = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ){
+            Text(
+                modifier = Modifier.weight(1f),
+                text=title
+            )
+            Button(onClick = {
+                onClick()
+            }){
+                Text(text=stringResource(R.string.allow_text))
+            }
+        }
+    }
+}
+
+@Composable
 fun MainThemeColorSelectorComponent(
     userSettings: UserSettings?,
     onToggleNewMainTheme: (String)-> Unit
@@ -96,7 +140,7 @@ fun MainThemeColorSelectorComponent(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical=10.dp, horizontal = 10.dp)
+            .padding(vertical = 10.dp, horizontal = 10.dp)
     ){
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -109,7 +153,9 @@ fun MainThemeColorSelectorComponent(
             )
             
             Card(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
                 shape = RoundedCornerShape(16.dp),
                 elevation = CardDefaults.cardElevation(4.dp)
             ){
@@ -160,7 +206,9 @@ fun ThemeSettingsComponent(
     val isDarkTheme = userSettings?.isDarkMode ?: true
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical=10.dp, horizontal = 10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp, horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ){
         Column(
@@ -205,7 +253,9 @@ fun DurationSettingsComponent(
     val longBreakTime = userSettings?.longBreakTime?:TimerMode.LONG_BREAK.defaultDuration
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical=10.dp, horizontal = 10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp, horizontal = 10.dp),
     ){
         Column(
             modifier = Modifier.fillMaxWidth(),

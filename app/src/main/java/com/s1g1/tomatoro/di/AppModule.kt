@@ -24,7 +24,10 @@ val appModule = module {
 
     single { SettingsRepository(get()) }
 
-    viewModel { SettingsViewModel(get()) }
+    viewModel { SettingsViewModel(
+        repository = get(),
+        application = androidApplication()
+    ) }
 
     // APP DATABASE COMPONENT
     single {

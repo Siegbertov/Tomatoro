@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -26,6 +28,7 @@ fun MainAppScreen(
     userSettings: UserSettings?,
 ) {
     val navController = rememberNavController()
+    val badgeCount by settingsViewModel.badgeCount.collectAsStateWithLifecycle()
     val timerViewModel: TimerViewModel = koinViewModel()
     val statsViewModel: StatsViewModel = koinViewModel()
     val currentColor: Color = MainThemeColors.fromName(
@@ -38,9 +41,10 @@ fun MainAppScreen(
         topBar = { SimpleTopBar() },
         floatingActionButtonPosition = FabPosition.Center,
         floatingActionButton = {
-            NavigationBottomToolbar(
+            NavigationBottomFAB(
                 navController=navController,
-                currentColor=currentColor
+                currentColor=currentColor,
+                settingsBadgeCount = badgeCount
             )
         }
     ) { innerPadding ->

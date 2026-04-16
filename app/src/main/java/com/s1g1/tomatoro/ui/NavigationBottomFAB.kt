@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -25,9 +27,10 @@ import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 
 @Composable
-fun NavigationBottomToolbar(
+fun NavigationBottomFAB(
     navController: NavHostController,
-    currentColor: Color
+    currentColor: Color,
+    settingsBadgeCount: Int,
 ) {
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -70,12 +73,35 @@ fun NavigationBottomToolbar(
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ){
-                        Icon(
-                            imageVector = if(isSelected) item.iconFilled else item.iconOutlined,
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp),
-                            tint = if(isSelected) currentColor.copy(alpha = 0.6f) else LocalContentColor.current
-                        )
+                        if(item != NavigationItem.Settings){
+                            Icon(
+                                imageVector = if(isSelected) item.iconFilled else item.iconOutlined,
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp),
+                                tint = if(isSelected) currentColor.copy(alpha = 0.6f) else LocalContentColor.current
+                            )
+                        } else {
+                            BadgedBox(
+                                modifier = Modifier.padding(10.dp),
+                                badge = {
+                                    if (settingsBadgeCount > 0) {
+                                        Badge(
+                                            containerColor = Color.Red,
+                                            contentColor = Color.White
+                                        ) {
+                                            Text(settingsBadgeCount.toString())
+                                        }
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = if(isSelected) item.iconFilled else item.iconOutlined,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(24.dp),
+                                    tint = if(isSelected) currentColor.copy(alpha = 0.6f) else LocalContentColor.current
+                                )
+                            }
+                        }
                         Text(
                             text = item.title,
                             fontWeight = FontWeight.Black,

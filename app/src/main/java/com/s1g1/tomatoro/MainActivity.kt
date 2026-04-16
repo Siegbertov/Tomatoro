@@ -9,15 +9,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.s1g1.tomatoro.ui.MainAppScreen
 import com.s1g1.tomatoro.ui.settings.SettingsViewModel
 import com.s1g1.tomatoro.ui.theme.TomatoroTheme
-import org.koin.androidx.compose.koinViewModel
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class MainActivity : ComponentActivity() {
+
+    private val settingsViewModel: SettingsViewModel by viewModel()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
 
-            val settingsViewModel: SettingsViewModel = koinViewModel()
+            settingsViewModel.checkPermissions()
+
             val userSettings by settingsViewModel.settings.collectAsStateWithLifecycle()
             val isDarkTheme = userSettings?.isDarkMode ?: true
 
@@ -28,5 +32,10 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        settingsViewModel.checkPermissions()
     }
 }
