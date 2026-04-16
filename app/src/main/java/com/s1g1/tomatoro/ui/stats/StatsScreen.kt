@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -23,10 +23,13 @@ import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -109,34 +112,112 @@ fun StatsScreen(
             )
         }
         if (showAllDisplay){
-            Dialog(
-                onDismissRequest = {statsViewModel.onToggleAllSessionDisplay()}
-            ){
-                LazyColumn(
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    items(allSessions){ currentSession->
+            StatsStorageDialog(
+                onDismiss = { statsViewModel.onToggleAllSessionDisplay() },
+                sessions = allSessions,
+                onToggleSessionDelete = { session ->
+                    statsViewModel.deleteSessionFromDatabase(session = session)
+                }
+            )
+
+        }
+    }
+}
+
+@Composable
+fun StatsStorageDialog(
+    onDismiss: ()->Unit,
+    sessions: List<Session>,
+    onToggleSessionDelete: (Session)-> Unit
+) {
+
+    val groupedSessions = remember(sessions) {
+        sessions
+            .groupBy { session ->
+                DateTimeFormatter.ofPattern("yyyy MMMM dd")
+                    .withZone(ZoneId.systemDefault())
+                    .format(Instant.ofEpochMilli(session.endTimestamp))
+            }
+    }
+
+    Dialog(
+        onDismissRequest = { onDismiss() }
+    ){
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.8f),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+            shape = RoundedCornerShape(16.dp)
+        ){
+            LazyColumn(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(horizontal = 10.dp)
+            ) {
+
+                groupedSessions.forEach { (date, sessionsInDay) ->
+
+                    stickyHeader {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Text(
+                                text = date,
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    items(sessionsInDay) { currentSession ->
+                        val currentHHMM = currentSession.endTimestamp.let{
+                            DateTimeFormatter.ofPattern("HH:mm")
+                                .withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(it))
+                        }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly,
                             verticalAlignment = Alignment.CenterVertically
                         ){
-                            Text( text = currentSession.endTimestamp.let{
-                                DateTimeFormatter.ofPattern("(yyyy MMM dd HH:mm)")
-                                    .withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(it))
-                            } )
-                            Text( text = currentSession.mode.name )
-                            Text( text = currentSession.duration.toString() )
-                            Spacer(modifier = Modifier.weight(1f))
-                            IconButton(onClick = {
-                                statsViewModel.deleteSessionFromDatabase(session = currentSession)
-                            }){
+                            Text(
+                                modifier = Modifier.weight(1f),
+                                text = "$currentHHMM ${stringResource(currentSession.mode.title)} (${(currentSession.duration / 60).toInt()}m)"
+                            )
+                            IconButton(
+                                onClick = { onToggleSessionDelete(currentSession) }
+                            ){
                                 Icon(imageVector = Icons.Default.Delete, contentDescription = null)
                             }
                         }
                     }
+
+
                 }
+
+
+//            items(sessions){ currentSession->
+//                Row(
+//                    modifier = Modifier.fillMaxWidth(),
+//                    horizontalArrangement = Arrangement.SpaceEvenly,
+//                    verticalAlignment = Alignment.CenterVertically
+//                ){
+//                    Text( text = currentSession.endTimestamp.let{
+//                        DateTimeFormatter.ofPattern("(yyyy MMM dd HH:mm)")
+//                            .withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(it))
+//                    } )
+//                    Text( text = currentSession.mode.name )
+//                    Text( text = currentSession.duration.toString() )
+//                    Spacer(modifier = Modifier.weight(1f))
+//                    IconButton(onClick = {
+//                        onToggleSessionDelete(currentSession)
+//                    }){
+//                        Icon(imageVector = Icons.Default.Delete, contentDescription = null)
+//                    }
+//                }
+//            }
             }
         }
     }

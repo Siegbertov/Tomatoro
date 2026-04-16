@@ -82,7 +82,6 @@ fun NavigationBottomFAB(
                             )
                         } else {
                             BadgedBox(
-                                modifier = Modifier.padding(10.dp),
                                 badge = {
                                     if (settingsBadgeCount > 0) {
                                         Badge(
