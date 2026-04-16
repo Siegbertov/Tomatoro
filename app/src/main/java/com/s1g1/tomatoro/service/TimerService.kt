@@ -8,6 +8,7 @@ import android.app.Service
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.s1g1.tomatoro.MainActivity
@@ -68,6 +69,12 @@ class TimerService : Service(), KoinComponent {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var timerJob: Job? = null
 
+    private val wakeLock: PowerManager.WakeLock by lazy {
+        (getSystemService(POWER_SERVICE) as PowerManager).run {
+            newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "TomatoroApp::TimerWakeLock")
+        }
+    }
+
     private val notificationManager by lazy {
         getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     }
@@ -99,50 +106,62 @@ class TimerService : Service(), KoinComponent {
                 TIMER_CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_HIGH
             )
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(channel)
+            notificationManager.createNotificationChannel(channel)
         }
     }
     private fun startForegroundService(durationSeconds: Long){
         // CREATES NOTIFICATION CHANNEL (for API 26+)
         createNotificationChannel()
+
         // START FOREGROUND
         startForeground(NOTIFICATION_ID, notificationBuilder.setContentText("START...").build())
+
+        // UPDATE FIRST NOTIFICATION
+        updateNotification( newMessage = formatTime(seconds = _secondsLeft.value) )
+
+        if (!wakeLock.isHeld) {
+            wakeLock.acquire((durationSeconds + 60) * 1000L )
+        }
 
         //MY PERSONAL TIMER (cancel previous)
         timerJob?.cancel()
 
         //MY PERSONAL TIMER (start new)
-        timerJob = serviceScope.launch {
-            // SETTING UP
-            if(_secondsLeft.value == 0L){
-                _secondsLeft.value = durationSeconds
-            }
-            // TICKING
-            while (_secondsLeft.value > 0){
-                delay(timeMillis = 1000L)
-                _secondsLeft.value -= 1
-                updateNotification( newMessage = formatTime(seconds = _secondsLeft.value) )
-            }
-            // FINISHED
-            val name: String = getString(TimerMode.fromName(_currentModeName.value).title)
-            saveSessionToDatabase(
-                session = Session(
-                    endTimestamp = System.currentTimeMillis(),
-                    mode = TimerMode.fromName(name = _currentModeName.value),
-                    duration = _currentFullSeconds.value ?: TimerMode.fromName(name = _currentModeName.value).defaultDuration.toLong()
+        timerJob = serviceScope.launch(Dispatchers.Default) {
+
+            try{
+                // SETTING UP
+                if(_secondsLeft.value == 0L){
+                    _secondsLeft.value = durationSeconds
+                }
+                // TICKING
+                while (_secondsLeft.value > 0){
+                    delay(timeMillis = 1000L)
+                    _secondsLeft.value -= 1
+
+                    // UPDATE CURRENT NOTIFICATION
+                    updateNotification( newMessage = formatTime(seconds = _secondsLeft.value) )
+                }
+                // FINISHED
+                val name: String = getString(TimerMode.fromName(_currentModeName.value).title)
+                saveSessionToDatabase(
+                    session = Session(
+                        endTimestamp = System.currentTimeMillis(),
+                        mode = TimerMode.fromName(name = _currentModeName.value),
+                        duration = _currentFullSeconds.value ?: TimerMode.fromName(name = _currentModeName.value).defaultDuration.toLong()
+                    )
                 )
-            )
-            // UPDATE LAST NOTIFICATION
-            updateNotification( newMessage = "DONE: $name", isFinal = true )
-
-            _isRunning.value = false
-            _secondsLeft.value = _currentFullSeconds.value ?: 0L
-            _currentFullSeconds.value = null
-
-            triggerVibration(this@TimerService)
-            stopForeground(STOP_FOREGROUND_DETACH)
-            stopSelf()
+                // UPDATE LAST NOTIFICATION
+                updateNotification( newMessage = "DONE: $name", isFinal = true )
+                _isRunning.value = false
+                _secondsLeft.value = _currentFullSeconds.value ?: 0L
+                _currentFullSeconds.value = null
+                triggerVibration(this@TimerService)
+            } finally {
+                if (wakeLock.isHeld) wakeLock.release()
+                stopForeground(STOP_FOREGROUND_DETACH)
+                stopSelf()
+            }
         }
     }
 
@@ -154,12 +173,10 @@ class TimerService : Service(), KoinComponent {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
-
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-
         val notification = notificationBuilder
             .setContentText(newMessage)
             .setOnlyAlertOnce(!isFinal)
@@ -172,7 +189,6 @@ class TimerService : Service(), KoinComponent {
                 }
             }
             .build()
-
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
@@ -180,7 +196,7 @@ class TimerService : Service(), KoinComponent {
         serviceScope.launch(Dispatchers.IO) {
             try{
                 repository.saveSession(session = session)
-                Log.d(TAG, "FINISH - ${getCurrentFormattedTime()} - ${_currentFullSeconds.value} - ${getString(TimerMode.fromName(_currentModeName.value).title)}")
+                Log.d(TAG, "FINISH - ${getCurrentFormattedTime()} - ${session.duration} - ${getString(TimerMode.fromName(_currentModeName.value).title)}")
             } catch (e: Exception){
                 Log.d(TAG, "Failed to save session", e)
             }
@@ -215,8 +231,9 @@ class TimerService : Service(), KoinComponent {
                 _secondsLeft.value = durationSeconds
                 _currentModeName.value = modeName
                 _currentFullSeconds.value = null
-                stopForeground(STOP_FOREGROUND_REMOVE)
 
+                if (wakeLock.isHeld) wakeLock.release()
+                stopForeground(STOP_FOREGROUND_REMOVE)
                 notificationManager.cancel(NOTIFICATION_ID)
                 stopSelf()
             }
@@ -227,6 +244,8 @@ class TimerService : Service(), KoinComponent {
     override fun onDestroy() {
         serviceScope.cancel()
         timerJob?.cancel()
+        notificationManager.cancel(NOTIFICATION_ID)
+        if (wakeLock.isHeld) wakeLock.release()
         super.onDestroy()
     }
 }
