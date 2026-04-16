@@ -1,6 +1,7 @@
 package com.s1g1.tomatoro.service
 
 import android.annotation.SuppressLint
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -44,10 +45,10 @@ class TimerService : Service(), KoinComponent {
             val secs = seconds % 60
             return String.format(Locale.getDefault(), "%02d:%02d", minutes, secs)
         }
-        private const val TAG = "TimerService"
-        private const val NOTIFICATION_ID = 1
+        private const val TAG = "TimerServiceLogTag"
         const val TIMER_CHANNEL_ID = "TIMER_CHANNEL"
         const val TIMER_CHANNEL_NAME = "Timer Notifications"
+        private var NOTIFICATION_ID = 1
 
         const val DURATION_EXTRA = "DURATION"
         const val MODE_EXTRA = "MODE"
@@ -62,7 +63,6 @@ class TimerService : Service(), KoinComponent {
         val currentFullSeconds = _currentFullSeconds.asStateFlow()
 
         private val _currentModeName = MutableStateFlow(TimerMode.getDefault().name)
-        val currentModeName = _currentModeName.asStateFlow()
     }
 
     private val repository: SessionRepository by inject()
@@ -78,24 +78,6 @@ class TimerService : Service(), KoinComponent {
     private val notificationManager by lazy {
         getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     }
-    private val notificationBuilder by lazy {
-        NotificationCompat.Builder(this, TIMER_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_timer)
-            .setContentTitle(getString(R.string.app_name))
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .setContentIntent(
-                PendingIntent.getActivity(
-                    this,
-                    0,
-                    Intent(this, MainActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    },
-                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-                )
-            )
-    }
 
     override fun onBind(intent: Intent): IBinder? = null
 
@@ -110,40 +92,47 @@ class TimerService : Service(), KoinComponent {
         }
     }
     private fun startForegroundService(durationSeconds: Long){
-        // CREATES NOTIFICATION CHANNEL (for API 26+)
         createNotificationChannel()
-
-        // START FOREGROUND
-        startForeground(NOTIFICATION_ID, notificationBuilder.setContentText("START...").build())
-
-        // UPDATE FIRST NOTIFICATION
-        updateNotification( newMessage = formatTime(seconds = _secondsLeft.value) )
-
+        startForeground(NOTIFICATION_ID, buildTimerNotification(contentText = "START...", isHighPriority = true))
         if (!wakeLock.isHeld) {
             wakeLock.acquire((durationSeconds + 60) * 1000L )
         }
-
-        //MY PERSONAL TIMER (cancel previous)
         timerJob?.cancel()
-
-        //MY PERSONAL TIMER (start new)
         timerJob = serviceScope.launch(Dispatchers.Default) {
-
             try{
-                // SETTING UP
-                if(_secondsLeft.value == 0L){
-                    _secondsLeft.value = durationSeconds
-                }
-                // TICKING
+                if(_secondsLeft.value == 0L) _secondsLeft.value = durationSeconds
+                val startTimeMillis = System.currentTimeMillis()
+                val totalDurationMillis = _secondsLeft.value * 1000L
                 while (_secondsLeft.value > 0){
-                    delay(timeMillis = 1000L)
-                    _secondsLeft.value -= 1
-
-                    // UPDATE CURRENT NOTIFICATION
-                    updateNotification( newMessage = formatTime(seconds = _secondsLeft.value) )
+                    delay(timeMillis = 500L)
+                    val elapsedMillis = System.currentTimeMillis() - startTimeMillis
+                    val remainingMillis = totalDurationMillis - elapsedMillis
+                    if (remainingMillis <= 0) {
+                        _secondsLeft.value = 0
+                        break
+                    }
+                    val currentSeconds = remainingMillis / 1000
+                    if (_secondsLeft.value != currentSeconds){
+                        _secondsLeft.value = currentSeconds
+                        notificationManager.notify(
+                            NOTIFICATION_ID,
+                            buildTimerNotification(
+                                contentText = formatTime(seconds = _secondsLeft.value)
+                            )
+                        )
+                    }
                 }
-                // FINISHED
+//                stopForeground(STOP_FOREGROUND_DETACH)
+                stopForeground(STOP_FOREGROUND_REMOVE)
                 val name: String = getString(TimerMode.fromName(_currentModeName.value).title)
+                notificationManager.notify(
+                    NOTIFICATION_ID,
+                    buildTimerNotification(
+                        contentText = "(${(_currentFullSeconds.value?.div(60))?.toInt()}m): $name",
+                        isHighPriority = true,
+                        isPopup = true
+                    )
+                )
                 saveSessionToDatabase(
                     session = Session(
                         endTimestamp = System.currentTimeMillis(),
@@ -151,25 +140,23 @@ class TimerService : Service(), KoinComponent {
                         duration = _currentFullSeconds.value ?: TimerMode.fromName(name = _currentModeName.value).defaultDuration.toLong()
                     )
                 )
-                // UPDATE LAST NOTIFICATION
-                updateNotification( newMessage = "DONE: $name", isFinal = true )
+                NOTIFICATION_ID+=1
                 _isRunning.value = false
                 _secondsLeft.value = _currentFullSeconds.value ?: 0L
                 _currentFullSeconds.value = null
                 triggerVibration(this@TimerService)
             } finally {
                 if (wakeLock.isHeld) wakeLock.release()
-                stopForeground(STOP_FOREGROUND_DETACH)
-                stopSelf()
             }
         }
     }
 
     @SuppressLint("FullScreenIntentPolicy")
-    private fun updateNotification(
-        newMessage: String,
-        isFinal: Boolean = false
-    ){
+    private fun buildTimerNotification(
+        contentText: String,
+        isHighPriority: Boolean = false,
+        isPopup: Boolean = false,
+    ): Notification {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
@@ -177,19 +164,32 @@ class TimerService : Service(), KoinComponent {
             this, 0, intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-        val notification = notificationBuilder
-            .setContentText(newMessage)
-            .setOnlyAlertOnce(!isFinal)
+        return NotificationCompat.Builder(this, TIMER_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_timer) // ICON
+            .setContentTitle(getString(R.string.app_name)) // TITLE (app name)
+            .setContentText(contentText) // TEXT (mm:ss)
+            .setOngoing(true)
+            .setSilent(!isHighPriority) // VIBRATION+SOUND only for start and finish
+            .setOnlyAlertOnce(isHighPriority)
+            .setPriority(if (isHighPriority) NotificationCompat.PRIORITY_MAX else NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    this,
+                    0,
+                    Intent(this, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    },
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                )
+            )
             .apply{
-                if (isFinal){
-                    setCategory(NotificationCompat.CATEGORY_ALARM)
-                    setPriority(NotificationCompat.PRIORITY_MAX)
-                    setDefaults(NotificationCompat.DEFAULT_ALL)
+                if(isPopup){
                     setFullScreenIntent(pendingIntent, true)
                 }
             }
             .build()
-        notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
     private fun saveSessionToDatabase(session: Session){
@@ -246,6 +246,7 @@ class TimerService : Service(), KoinComponent {
         timerJob?.cancel()
         notificationManager.cancel(NOTIFICATION_ID)
         if (wakeLock.isHeld) wakeLock.release()
+        stopSelf()
         super.onDestroy()
     }
 }
