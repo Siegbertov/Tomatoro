@@ -19,10 +19,11 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -54,6 +55,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.min
 import androidx.core.content.ContextCompat
 import com.s1g1.tomatoro.MainThemeColors
 import com.s1g1.tomatoro.service.TimerService
@@ -112,23 +115,19 @@ fun TimerScreen(
         }
     }
 
-    Box(
+    BoxWithConstraints(
+        contentAlignment = Alignment.Center,
         modifier = Modifier
-            .padding(bottom=80.dp)
-            .fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ){
-        ModeSelectorComponent(
-            isRunning=isRunning,
-            selectedMode=selectedMode,
-            currentThemeColor = currentMainThemeColor,
-            onModeChange={ newMode-> selectedMode = newMode},
-            modifier = Modifier
-                    .align(Alignment.TopCenter)
-        )
-
+            .fillMaxSize()
+            .padding(bottom = 80.dp)
+            .padding(12.dp)
+    ) {
+        val minSize = min(maxWidth, maxHeight)
+        val isLandscape = maxWidth > maxHeight
         TimerComponent(
+            modifier = Modifier.align(Alignment.Center),
             isRunning = isRunning,
+            minSize = minSize,
             currentThemeColor = currentMainThemeColor,
             secondsLeft = secondsLeft,
             initialTime = timerViewModel.currentFullSeconds.value ?: secondsLeft,
@@ -161,7 +160,18 @@ fun TimerScreen(
                     durationSeconds = currentSeconds,
                     mode = selectedMode
                 )
-            },
+            }
+        )
+
+        ModeSelectorComponent(
+            modifier = Modifier.align(
+                if (isLandscape) Alignment.CenterStart else Alignment.TopCenter
+            ),
+            isRunning=isRunning,
+            isLandscape=isLandscape,
+            selectedMode=selectedMode,
+            currentThemeColor = currentMainThemeColor,
+            onModeChange={ newMode-> selectedMode = newMode}
         )
     }
 }
@@ -169,7 +179,9 @@ fun TimerScreen(
 
 @Composable
 fun TimerComponent(
+    modifier: Modifier = Modifier,
     isRunning: Boolean,
+    minSize: Dp,
     secondsLeft: Long,
     initialTime: Long,
     onStartPause: () -> Unit,
@@ -182,9 +194,8 @@ fun TimerComponent(
     )
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(32.dp)
+        modifier = modifier
+            .size(minSize)
             .aspectRatio(1f),
         contentAlignment = Alignment.Center
     ){
@@ -205,14 +216,14 @@ fun TimerComponent(
         }
         Text(
             text = TimerService.formatTime(secondsLeft),
-            style = MaterialTheme.typography.displayLarge,
+            style = MaterialTheme.typography.displayMedium,
         )
 
 
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 40.dp),
+                .padding(bottom = minSize/6),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -220,7 +231,7 @@ fun TimerComponent(
                 Icon(
                     imageVector = if (isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
                     contentDescription = null,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(35.dp)
                 )
             }
 
@@ -228,20 +239,22 @@ fun TimerComponent(
                 Icon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = null,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(35.dp)
                 )
             }
         }
     }
 
+
 }
 
 @Composable
 fun ModeSelectorComponent(
+    modifier: Modifier = Modifier,
     isRunning: Boolean,
+    isLandscape: Boolean,
     selectedMode: TimerMode,
     onModeChange: (TimerMode) -> Unit,
-    modifier: Modifier = Modifier,
     currentThemeColor: Color
 ) {
     AnimatedVisibility(
@@ -254,22 +267,47 @@ fun ModeSelectorComponent(
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.background,
             border = BorderStroke(1.dp, currentThemeColor),
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
+            modifier = Modifier.padding(4.dp)
         ){
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ){
-                TimerMode.entries.forEach { mode->
-                    FilterChip(
-                        selected = selectedMode==mode,
-                        onClick = {
-                            if (!isRunning){
-                                onModeChange(mode)
-                            }
-                        },
-                        label = { Text( text = stringResource(mode.title))}
-                    )
+            if (isLandscape){
+                Column(
+                    modifier = Modifier
+                        .padding(4.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    TimerMode.entries.forEach { mode ->
+                        FilterChip(
+                            modifier=Modifier.padding(vertical = 2.dp),
+                            selected = selectedMode == mode,
+                            onClick = {
+                                if (!isRunning) {
+                                    onModeChange(mode)
+                                }
+                            },
+                            label = { Text(text = stringResource(mode.title)) }
+                        )
+                    }
+                }
+            } else {
+                Row(
+                    modifier = Modifier
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TimerMode.entries.forEach { mode ->
+                        FilterChip(
+                            modifier=Modifier.padding(horizontal = 2.dp),
+                            selected = selectedMode == mode,
+                            onClick = {
+                                if (!isRunning) {
+                                    onModeChange(mode)
+                                }
+                            },
+                            label = { Text(text = stringResource(mode.title)) }
+                        )
+                    }
                 }
             }
         }
