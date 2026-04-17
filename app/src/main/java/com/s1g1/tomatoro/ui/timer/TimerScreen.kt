@@ -227,6 +227,16 @@ fun TimerComponent(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if(isRunning || initialTime != secondsLeft){
+                IconButton(onClick = onReset) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(35.dp)
+                    )
+                }
+            }
+
             IconButton(onClick = onStartPause) {
                 Icon(
                     imageVector = if (isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
@@ -234,18 +244,8 @@ fun TimerComponent(
                     modifier = Modifier.size(35.dp)
                 )
             }
-
-            IconButton(onClick = onReset) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = null,
-                    modifier = Modifier.size(35.dp)
-                )
-            }
         }
     }
-
-
 }
 
 @Composable

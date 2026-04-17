@@ -69,6 +69,7 @@ class TimerService : Service(), KoinComponent {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var timerJob: Job? = null
 
+
     private val wakeLock: PowerManager.WakeLock by lazy {
         (getSystemService(POWER_SERVICE) as PowerManager).run {
             newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "TomatoroApp::TimerWakeLock")
@@ -130,7 +131,7 @@ class TimerService : Service(), KoinComponent {
                     buildTimerNotification(
                         contentText = "(${(_currentFullSeconds.value?.div(60))?.toInt()}m): $name",
                         isHighPriority = true,
-                        isPopup = true
+                        isFinalPopup = true
                     )
                 )
                 saveSessionToDatabase(
@@ -151,11 +152,25 @@ class TimerService : Service(), KoinComponent {
         }
     }
 
+    private fun createActionIntent(action: TimerAction): PendingIntent{
+        val intent = Intent(this, TimerService::class.java).apply{
+            this.action = action.name
+            putExtra(DURATION_EXTRA, _currentFullSeconds.value)
+        }
+
+        return PendingIntent.getService(
+            this,
+            action.name.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
     @SuppressLint("FullScreenIntentPolicy")
     private fun buildTimerNotification(
         contentText: String,
         isHighPriority: Boolean = false,
-        isPopup: Boolean = false,
+        isFinalPopup: Boolean = false,
     ): Notification {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -185,8 +200,28 @@ class TimerService : Service(), KoinComponent {
                 )
             )
             .apply{
-                if(isPopup){
+                if(isFinalPopup){
                     setFullScreenIntent(pendingIntent, true)
+                } else {
+                    addAction(
+                        R.drawable.ic_reset,
+                        TimerAction.RESET.name,
+                        createActionIntent(TimerAction.RESET)
+                    )
+
+                    if (_isRunning.value){
+                        addAction(
+                            R.drawable.ic_pause,
+                            TimerAction.PAUSE.name,
+                            createActionIntent(TimerAction.PAUSE)
+                        )
+                    } else {
+                        addAction(
+                            R.drawable.ic_start,
+                            TimerAction.START.name,
+                            createActionIntent(TimerAction.START)
+                        )
+                    }
                 }
             }
             .build()
@@ -221,6 +256,13 @@ class TimerService : Service(), KoinComponent {
                 Log.d(TAG, "$actionName - ${getCurrentFormattedTime()}")
                 _isRunning.value = false
                 timerJob?.cancel()
+
+                notificationManager.notify(
+                    NOTIFICATION_ID,
+                    buildTimerNotification(
+                        contentText = formatTime(seconds = _secondsLeft.value)
+                    )
+                )
             }
             TimerAction.RESET.name -> {
                 Log.d(TAG, "$actionName - ${getCurrentFormattedTime()} - $durationSeconds")
