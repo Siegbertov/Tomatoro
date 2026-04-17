@@ -1,7 +1,9 @@
 package com.s1g1.tomatoro.ui.settings
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,7 +41,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,7 +56,8 @@ import com.s1g1.tomatoro.UserSettings
 @Composable
 fun SettingsScreen(
     settingsViewModel: SettingsViewModel,
-    userSettings: UserSettings?
+    userSettings: UserSettings?,
+    isRunning: Boolean
 ) {
     val scrollState = rememberScrollState()
     val isNotificationAllowed by settingsViewModel.isNotificationAllowed.collectAsStateWithLifecycle()
@@ -87,7 +93,8 @@ fun SettingsScreen(
 
         DurationSettingsComponent(
             userSettings=userSettings,
-            settingsViewModel=settingsViewModel
+            settingsViewModel=settingsViewModel,
+            isRunning=isRunning
         )
 
         MainThemeColorSelectorComponent(
@@ -246,7 +253,8 @@ fun ThemeSettingsComponent(
 @Composable
 fun DurationSettingsComponent(
     userSettings: UserSettings?,
-    settingsViewModel: SettingsViewModel
+    settingsViewModel: SettingsViewModel,
+    isRunning: Boolean
 ) {
     val sessionTime = userSettings?.sessionTime?: TimerMode.TOMATORO.defaultDuration
     val shortBreakTime = userSettings?.shortBreakTime?:TimerMode.BREAK.defaultDuration
@@ -271,6 +279,7 @@ fun DurationSettingsComponent(
             ){
 
                 DurationCard(
+                    isRunning = isRunning,
                     modifier = Modifier
                         .aspectRatio(1f)
                         .padding(horizontal = 8.dp)
@@ -290,6 +299,7 @@ fun DurationSettingsComponent(
                 )
 
                 DurationCard(
+                    isRunning = isRunning,
                     modifier = Modifier
                         .aspectRatio(1f)
                         .padding(horizontal = 8.dp)
@@ -305,10 +315,11 @@ fun DurationSettingsComponent(
                         if (shortBreakTime>1){
                             settingsViewModel.updateShortBreakTime(newTime = shortBreakTime-1)
                         }
-                    }
+                    },
                 )
 
                 DurationCard(
+                    isRunning = isRunning,
                     modifier = Modifier
                         .aspectRatio(1f)
                         .heightIn(max = 100.dp)
@@ -325,7 +336,7 @@ fun DurationSettingsComponent(
                         if (longBreakTime>1){
                             settingsViewModel.updateLongBreakTime(newTime = longBreakTime-1)
                         }
-                    }
+                    },
                 )
             }
         }
@@ -334,11 +345,12 @@ fun DurationSettingsComponent(
 
 @Composable
 fun DurationCard(
+    isRunning: Boolean,
     modifier: Modifier = Modifier,
     duration: String,
     durationDescription: String,
-    onToggleIncrease: ()-> Unit,
-    onToggleDecrease: ()-> Unit,
+    onToggleIncrease: () -> Unit,
+    onToggleDecrease: () -> Unit,
 ){
     Card(
         modifier = modifier,
@@ -366,6 +378,27 @@ fun DurationCard(
                 )
                 Text(text = durationDescription)
             }
+
+            if (isRunning) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.LightGray)
+                        .pointerInput(Unit) { detectTapGestures { } },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(R.string.block_duration_while_running),
+                        textAlign = TextAlign.Center,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 8.sp,
+                        modifier = Modifier
+                            .padding(16.dp)
+                    )
+                }
+            }
+
         }
     }
 }

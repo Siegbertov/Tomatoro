@@ -26,4 +26,9 @@
     <string name="allow_run_in_background">Allow to run in the background</string>
 
 
+    <string name="block_duration_while_running">YOU CANNOT CHANGE DURATION WHILE TIMER IS RUNNING</string>
+
+
+
+
 </resources>

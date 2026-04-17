@@ -35,6 +35,8 @@ fun MainAppScreen(
         name = userSettings?.mainThemeColor ?: MainThemeColors.getDefault().name
     ).color
 
+    val isRunning by timerViewModel.isRunning.collectAsStateWithLifecycle()
+
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -67,7 +69,8 @@ fun MainAppScreen(
             composable<Screen.Settings>{
                 SettingsScreen(
                     settingsViewModel = settingsViewModel,
-                    userSettings = userSettings
+                    userSettings = userSettings,
+                    isRunning = isRunning
                 )
             }
         }
