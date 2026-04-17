@@ -41,10 +41,10 @@ fun NavigationBottomFAB(
         color = MaterialTheme.colorScheme.surfaceContainer,
         tonalElevation = 3.dp,
         shadowElevation = 6.dp,
-        modifier = Modifier.padding(bottom = 2.dp, start = 16.dp, end=16.dp)
+        modifier = Modifier.padding(bottom = 4.dp, start = 16.dp, end=16.dp)
     ){
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             ,
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
@@ -69,7 +69,7 @@ fun NavigationBottomFAB(
                     modifier = Modifier.padding(horizontal = 10.dp)
                 ){
                     Column(
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ){
@@ -77,7 +77,7 @@ fun NavigationBottomFAB(
                             Icon(
                                 imageVector = if(isSelected) item.iconFilled else item.iconOutlined,
                                 contentDescription = null,
-                                modifier = Modifier.size(24.dp),
+                                modifier = Modifier.size(20.dp),
                                 tint = if(isSelected) currentColor.copy(alpha = 0.6f) else LocalContentColor.current
                             )
                         } else {
@@ -96,7 +96,7 @@ fun NavigationBottomFAB(
                                 Icon(
                                     imageVector = if(isSelected) item.iconFilled else item.iconOutlined,
                                     contentDescription = null,
-                                    modifier = Modifier.size(24.dp),
+                                    modifier = Modifier.size(20.dp),
                                     tint = if(isSelected) currentColor.copy(alpha = 0.6f) else LocalContentColor.current
                                 )
                             }
@@ -104,7 +104,7 @@ fun NavigationBottomFAB(
                         Text(
                             text = item.title,
                             fontWeight = FontWeight.Black,
-                            fontSize = 12.sp,
+                            fontSize = 10.sp,
                             style = MaterialTheme.typography.labelLarge,
                             color = if(isSelected) currentColor.copy(alpha = 0.75f) else Color.Unspecified
                         )
