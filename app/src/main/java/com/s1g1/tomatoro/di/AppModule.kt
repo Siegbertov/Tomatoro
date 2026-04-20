@@ -56,6 +56,7 @@ val appModule = module {
     single { get<AppDatabase>().tagDao() }
     single { TagRepository(tagDao = get()) }
 
+    // TIMER COMPONENT
     viewModel { TimerViewModel(
         tagRepository = get(),
         application = androidApplication()
@@ -63,5 +64,8 @@ val appModule = module {
     }
 
     // STATS COMPONENT
-    viewModel { StatsViewModel(get()) }
+    viewModel { StatsViewModel(
+        sessionRepository = get(),
+        tagRepository = get()
+    ) }
 }

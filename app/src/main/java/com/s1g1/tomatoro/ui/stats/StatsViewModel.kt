@@ -7,20 +7,51 @@ import androidx.lifecycle.viewModelScope
 import com.s1g1.tomatoro.database.sessions.Session
 import com.s1g1.tomatoro.database.sessions.SessionRepository
 import com.s1g1.tomatoro.database.sessions.SessionWithTag
+import com.s1g1.tomatoro.database.tags.Tag
+import com.s1g1.tomatoro.database.tags.TagRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale
 
-class StatsViewModel(private val sessionRepository: SessionRepository): ViewModel() {
+class StatsViewModel(
+    private val sessionRepository: SessionRepository,
+    private val tagRepository: TagRepository
+): ViewModel() {
 
-    val allSessions: StateFlow<List<SessionWithTag>> = sessionRepository.allSessionsWithTags
+    init {
+        viewModelScope.launch {
+            tagRepository.allUnhiddenTags.firstOrNull()?.let { tags ->
+                _selectedTagIds.value = tags.map { it.id }.toSet()
+            }
+        }
+    }
+
+    val allUnhiddenTags: StateFlow<List<Tag>> = tagRepository.allUnhiddenTags
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    private val _selectedTagIds = MutableStateFlow<Set<Int>>(emptySet())
+    val selectedTagIds = _selectedTagIds.asStateFlow()
+
+    fun toggleTagSelection(tagId: Int){
+        _selectedTagIds.update { currentSet ->
+            if(currentSet.contains(tagId)) currentSet - tagId else currentSet + tagId
+        }
+    }
+
+    val allSessionsWithTags: StateFlow<List<SessionWithTag>> = sessionRepository.allSessionsWithTags
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -56,9 +87,10 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
     }
 
     val daySessions: StateFlow<List<SessionWithTag>> = combine(
-        allSessions,
-        dayOffset
-    ){ sessions, offset ->
+        allSessionsWithTags,
+        dayOffset,
+        selectedTagIds
+    ){ sessions, offset, tagSet ->
         val calendar = Calendar.getInstance()
         calendar.add(Calendar.DAY_OF_YEAR, offset)
 
@@ -79,7 +111,7 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
             timeInMillis
         }
 
-        sessions.filter { it.session.endTimestamp in startOfDay until endOfDay }
+        sessions.filter { it.session.endTimestamp in startOfDay until endOfDay && it.tag.id in tagSet }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // TODO WEEK COMPONENTS
@@ -100,9 +132,10 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
     }
 
     val weekSessions: StateFlow<List<SessionWithTag>> = combine(
-        allSessions,
-        weekOffset
-    ){ sessions, offset ->
+        allSessionsWithTags,
+        weekOffset,
+        selectedTagIds
+    ){ sessions, offset, tagSet ->
         val baseCalendar = Calendar.getInstance().apply {
             firstDayOfWeek = Calendar.MONDAY
             add(Calendar.WEEK_OF_YEAR, offset)
@@ -122,7 +155,7 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
             timeInMillis
         }
 
-        sessions.filter { it.session.endTimestamp in startOfWeek until endOfWeek }
+        sessions.filter { it.session.endTimestamp in startOfWeek until endOfWeek && it.tag.id in tagSet }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // TODO MONTH COMPONENTS
@@ -142,9 +175,10 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
     }
 
     val monthSessions: StateFlow<List<SessionWithTag>> = combine(
-        allSessions,
-        monthOffset
-    ){ sessions, offset ->
+        allSessionsWithTags,
+        monthOffset,
+        selectedTagIds
+    ){ sessions, offset, tagSet ->
         val baseCalendar = Calendar.getInstance().apply {
             set(Calendar.DAY_OF_MONTH, 1)
             add(Calendar.MONTH, offset)
@@ -163,7 +197,7 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
             timeInMillis
         }
 
-        sessions.filter { it.session.endTimestamp in startOfMonth until endOfMonth }
+        sessions.filter { it.session.endTimestamp in startOfMonth until endOfMonth && it.tag.id in tagSet}
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // TODO YEAR COMPONENTS
@@ -183,9 +217,10 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
     }
 
     val yearSessions: StateFlow<List<SessionWithTag>> = combine(
-        allSessions,
-        yearOffset
-    ){ sessions, offset ->
+        allSessionsWithTags,
+        yearOffset,
+        selectedTagIds
+    ){ sessions, offset, tagSet ->
         val baseCalendar = Calendar.getInstance().apply {
             set(Calendar.DAY_OF_YEAR, 1)
             add(Calendar.YEAR, offset)
@@ -204,7 +239,7 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
             timeInMillis
         }
 
-        sessions.filter { it.session.endTimestamp in startOfYear until endOfYear }
+        sessions.filter { it.session.endTimestamp in startOfYear until endOfYear && it.tag.id in tagSet }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
 

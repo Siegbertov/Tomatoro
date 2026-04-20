@@ -1,6 +1,7 @@
 package com.s1g1.tomatoro.ui.stats
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,17 +20,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,6 +51,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.s1g1.tomatoro.TimerMode
 import com.s1g1.tomatoro.database.sessions.SessionWithTag
+import com.s1g1.tomatoro.database.tags.Tag
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -51,9 +60,12 @@ import java.time.format.DateTimeFormatter
 fun StatsScreen(
     statsViewModel: StatsViewModel
 ) {
+
+    var isSelectTagDialogVisible by rememberSaveable { mutableStateOf(false) }
+
     val scrollState = rememberScrollState()
     val showAllDisplay by statsViewModel.showAllDisplay.collectAsStateWithLifecycle()
-    val allSessions by statsViewModel.allSessions.collectAsState()
+    val allSessions by statsViewModel.allSessionsWithTags.collectAsState()
 
     val dayLabel by statsViewModel.dayLabel.collectAsState()
     val daySessions by statsViewModel.daySessions.collectAsState()
@@ -66,6 +78,10 @@ fun StatsScreen(
 
     val yearLabel by statsViewModel.yearLabel.collectAsState()
     val yearSessions by statsViewModel.yearSessions.collectAsState()
+
+    val allUnhiddenTags by statsViewModel.allUnhiddenTags.collectAsState()
+    val selectedTagIds by statsViewModel.selectedTagIds.collectAsState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -78,6 +94,10 @@ fun StatsScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ){
+
+            FilterRow(
+                onFilterClick = {isSelectTagDialogVisible=true}
+            )
             
             StatsRow(
                 periodLabel = dayLabel,
@@ -106,9 +126,17 @@ fun StatsScreen(
                 onLeftClick = { statsViewModel.moveYear(delta = -1) },
                 onRightClick = { statsViewModel.moveYear(delta = 1) }
             )
-            
+
             StorageRow(
                 onStorageClick = { statsViewModel.onToggleAllSessionDisplay() }
+            )
+        }
+        if (isSelectTagDialogVisible){
+            TagFilterSheet(
+                allTags = allUnhiddenTags,
+                selectedIds = selectedTagIds,
+                onTagToggle = { selectedTagId -> statsViewModel.toggleTagSelection(tagId = selectedTagId) },
+                onDismiss = { isSelectTagDialogVisible=false }
             )
         }
         if (showAllDisplay){
@@ -120,6 +148,55 @@ fun StatsScreen(
                 }
             )
 
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TagFilterSheet(
+    allTags: List<Tag>,
+    selectedIds: Set<Int>,
+    onTagToggle: (Int)-> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(onDismissRequest = { onDismiss() }){
+        LazyColumn(modifier = Modifier.padding(16.dp)){
+            item { Text("Filter by Tags", style = MaterialTheme.typography.titleLarge) }
+            items(allTags) { tag ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onTagToggle(tag.id) }
+                ) {
+                    Checkbox(
+                        checked = selectedIds.contains(tag.id),
+                        onCheckedChange = { onTagToggle(tag.id) }
+                    )
+                    Text(text = tag.title)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FilterRow(
+    onFilterClick: ()->Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ){
+        IconButton(
+            onClick = { onFilterClick() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Icon(imageVector = Icons.Default.FilterAlt, contentDescription = null)
         }
     }
 }
@@ -179,7 +256,9 @@ fun StatsStorageDialog(
                         }
                         val currentText = "$currentHHMM ${stringResource(currentSWT.session.mode.title)} (${(currentSWT.session.duration / 60).toInt()}m)\nTag: ${currentSWT.tag.title}"
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceEvenly,
                             verticalAlignment = Alignment.CenterVertically
                         ){
@@ -211,7 +290,9 @@ fun StorageRow(
     ){
         IconButton(
             onClick = { onStorageClick() },
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
         ) {
             Icon(imageVector = Icons.Default.Storage, contentDescription = null)
         }
