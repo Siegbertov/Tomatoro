@@ -7,6 +7,7 @@ import com.s1g1.tomatoro.SettingsRepository
 import com.s1g1.tomatoro.ui.settings.SettingsViewModel
 import com.s1g1.tomatoro.database.AppDatabase
 import com.s1g1.tomatoro.database.MIGRATION_1_2
+import com.s1g1.tomatoro.database.TAGS_PREFILL_CALLBACK
 import com.s1g1.tomatoro.database.sessions.SessionRepository
 import com.s1g1.tomatoro.database.tags.TagRepository
 import com.s1g1.tomatoro.ui.stats.StatsViewModel
@@ -41,14 +42,15 @@ val appModule = module {
             .addMigrations(
                 MIGRATION_1_2
             )
+            .addCallback(TAGS_PREFILL_CALLBACK)
             .build()
     }
 
-    // sessions
+    // session table
     single { get<AppDatabase>().sessionDao() }
     single { SessionRepository(sessionDao = get()) }
 
-    // tags
+    // tag table
     single { get<AppDatabase>().tagDao() }
     single { TagRepository(tagDao = get()) }
 

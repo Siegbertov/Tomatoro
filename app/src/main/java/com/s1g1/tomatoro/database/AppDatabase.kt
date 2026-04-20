@@ -21,10 +21,28 @@ abstract class AppDatabase : RoomDatabase() {
 
 }
 
+val TAGS_PREFILL_CALLBACK = object : RoomDatabase.Callback() {
+
+    override fun onCreate(db: SupportSQLiteDatabase) {
+        super.onCreate(db)
+        db.execSQL("INSERT INTO $TAG_TABLE_NAME (id, title, isRemovable, isHidden) VALUES (0, 'NONE', 0, 0)")
+        db.execSQL("INSERT INTO $TAG_TABLE_NAME (id, title, isRemovable, isHidden) VALUES (1, 'WORK', 0, 0)")
+        db.execSQL("INSERT INTO $TAG_TABLE_NAME (id, title, isRemovable, isHidden) VALUES (2, 'STUDY', 0, 0)")
+    }
+
+    override fun onOpen(db: SupportSQLiteDatabase) {
+        super.onOpen(db)
+        db.execSQL("INSERT OR IGNORE INTO $TAG_TABLE_NAME (id, title, isRemovable, isHidden) VALUES (0, 'NONE', 0, 0)")
+        db.execSQL("INSERT OR IGNORE INTO $TAG_TABLE_NAME (id, title, isRemovable, isHidden) VALUES (1, 'WORK', 0, 0)")
+        db.execSQL("INSERT OR IGNORE INTO $TAG_TABLE_NAME (id, title, isRemovable, isHidden) VALUES (2, 'STUDY', 0, 0)")
+    }
+
+}
+
 val MIGRATION_1_2 = object : Migration(1, 2) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("""
-            CREATE TABLE IF NOT EXISTS ${TAG_TABLE_NAME} (
+            CREATE TABLE IF NOT EXISTS $TAG_TABLE_NAME (
                 `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
                 `title` TEXT NOT NULL, 
                 `isRemovable` INTEGER NOT NULL DEFAULT '0', 
