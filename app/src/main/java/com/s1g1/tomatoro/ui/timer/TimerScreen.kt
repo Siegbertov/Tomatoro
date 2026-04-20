@@ -125,7 +125,7 @@ fun TimerScreen(
         }
     }
 
-    LaunchedEffect(userSettings, selectedMode){
+    LaunchedEffect(userSettings, selectedMode, selectedTagId){
         if (!isRunning){
             val durationSeconds = when(selectedMode){
                 TimerMode.TOMATORO -> userSettings?.sessionTime?:TimerMode.TOMATORO.defaultDuration
@@ -135,7 +135,8 @@ fun TimerScreen(
             timerViewModel.onAction(
                 action = TimerAction.RESET,
                 durationSeconds=durationSeconds,
-                mode = selectedMode
+                mode = selectedMode,
+                tadId = selectedTagId
                 )
         }
     }
@@ -183,7 +184,8 @@ fun TimerScreen(
                 timerViewModel.onAction(
                     action = TimerAction.RESET,
                     durationSeconds = currentSeconds,
-                    mode = selectedMode
+                    mode = selectedMode,
+                    tadId = selectedTagId
                 )
             }
         )

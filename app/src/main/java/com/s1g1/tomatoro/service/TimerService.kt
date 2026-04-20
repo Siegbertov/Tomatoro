@@ -52,6 +52,7 @@ class TimerService : Service(), KoinComponent {
 
         const val DURATION_EXTRA = "DURATION"
         const val MODE_EXTRA = "MODE"
+        const val TAG_ID_EXTRA = "TAG ID EXTRA"
 
         private val _secondsLeft = MutableStateFlow(0L)
         val secondsLeft = _secondsLeft.asStateFlow()
@@ -63,6 +64,7 @@ class TimerService : Service(), KoinComponent {
         val currentFullSeconds = _currentFullSeconds.asStateFlow()
 
         private val _currentModeName = MutableStateFlow(TimerMode.getDefault().name)
+        private val _currentTagId = MutableStateFlow(0)
     }
 
     private val repository: SessionRepository by inject()
@@ -138,7 +140,8 @@ class TimerService : Service(), KoinComponent {
                     session = Session(
                         endTimestamp = System.currentTimeMillis(),
                         mode = TimerMode.fromName(name = _currentModeName.value),
-                        duration = _currentFullSeconds.value ?: TimerMode.fromName(name = _currentModeName.value).defaultDuration.toLong()
+                        duration = _currentFullSeconds.value ?: TimerMode.fromName(name = _currentModeName.value).defaultDuration.toLong(),
+                        tagId = _currentTagId.value
                     )
                 )
                 NOTIFICATION_ID+=1
@@ -242,6 +245,7 @@ class TimerService : Service(), KoinComponent {
         val actionName = intent?.action
         val durationSeconds = intent?.getLongExtra(DURATION_EXTRA, 0L) ?: 0L
         val modeName = intent?.getStringExtra(MODE_EXTRA) ?: TimerMode.getDefault().name
+        val tagId = intent?.getIntExtra(TAG_ID_EXTRA, 0) ?: 0
 
         when(actionName){
             TimerAction.START.name -> {
@@ -272,6 +276,7 @@ class TimerService : Service(), KoinComponent {
 
                 _secondsLeft.value = durationSeconds
                 _currentModeName.value = modeName
+                _currentTagId.value = tagId
                 _currentFullSeconds.value = null
 
                 if (wakeLock.isHeld) wakeLock.release()

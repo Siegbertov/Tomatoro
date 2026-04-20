@@ -10,6 +10,7 @@ import com.s1g1.tomatoro.database.tags.TagRepository
 import com.s1g1.tomatoro.service.TimerService
 import com.s1g1.tomatoro.service.TimerService.Companion.DURATION_EXTRA
 import com.s1g1.tomatoro.service.TimerService.Companion.MODE_EXTRA
+import com.s1g1.tomatoro.service.TimerService.Companion.TAG_ID_EXTRA
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -47,12 +48,14 @@ class TimerViewModel(
         action: TimerAction,
         durationSeconds: Long? = null,
         mode: TimerMode? = null,
+        tadId: Int = 0,
     ){
 
         val intent = Intent(application, TimerService::class.java).apply{
             this.action = action.name
             durationSeconds?.let { putExtra(DURATION_EXTRA, it) }
             mode?.let { putExtra(MODE_EXTRA, it.name) }
+            putExtra(TAG_ID_EXTRA, tadId)
         }
         application.startService(intent)
     }
