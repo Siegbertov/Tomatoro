@@ -94,6 +94,10 @@ fun StatsScreen(
             verticalArrangement = Arrangement.Top
         ){
 
+            StorageRow(
+                onStorageClick = { isStorageDialogVisible = true }
+            )
+
             FilterRow(
                 onFilterClick = {isSelectTagDialogVisible=true}
             )
@@ -124,10 +128,6 @@ fun StatsScreen(
                 sessions = yearSessions,
                 onLeftClick = { statsViewModel.moveYear(delta = -1) },
                 onRightClick = { statsViewModel.moveYear(delta = 1) }
-            )
-
-            StorageRow(
-                onStorageClick = { isStorageDialogVisible = true }
             )
         }
         if (isSelectTagDialogVisible){

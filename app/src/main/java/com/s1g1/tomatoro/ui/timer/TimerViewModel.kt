@@ -28,9 +28,6 @@ class TimerViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
-    val secondsLeft = TimerService.secondsLeft
-    val isRunning = TimerService.isRunning
-    val currentFullSeconds = TimerService.currentFullSeconds
 
     fun addNewTag(newTagTitle: String){
         viewModelScope.launch(Dispatchers.IO) {
@@ -43,6 +40,10 @@ class TimerViewModel(
             tagRepository.deleteTagById(tagId = tagId)
         }
     }
+
+    val secondsLeft = TimerService.secondsLeft
+    val isRunning = TimerService.isRunning
+    val currentFullSeconds = TimerService.currentFullSeconds
 
     fun onAction(
         action: TimerAction,

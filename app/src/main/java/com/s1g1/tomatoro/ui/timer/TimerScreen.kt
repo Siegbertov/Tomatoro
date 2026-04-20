@@ -27,9 +27,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -41,6 +44,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -76,6 +80,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.min
+import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import com.s1g1.tomatoro.MainThemeColors
 import com.s1g1.tomatoro.R
@@ -97,6 +102,7 @@ fun TimerScreen(
     val allUnhiddenTags by timerViewModel.allUnhiddenTags.collectAsState()
     var selectedTagId by rememberSaveable { mutableIntStateOf(0) }
     var isAddNewTagDialogVisible by rememberSaveable { mutableStateOf(false) }
+    var isDeleteTagsDialogVisible by rememberSaveable { mutableStateOf(false) }
 
     var selectedMode by remember { mutableStateOf(TimerMode.TOMATORO) }
 
@@ -205,14 +211,27 @@ fun TimerScreen(
             modifier = Modifier.align(
                 if (isLandscape) Alignment.CenterEnd else Alignment.BottomCenter
             ),
-            isRunning=isRunning,
-            isLandscape=isLandscape,
+            isRunning = isRunning,
+            isLandscape = isLandscape,
             currentThemeColor = currentMainThemeColor,
             allTags = allUnhiddenTags,
             selectedTagId = selectedTagId,
-            onTagIdChange = {newId -> selectedTagId = newId},
-            onAddIconClicked = { isAddNewTagDialogVisible = true }
+            onTagIdChange = { newId -> selectedTagId = newId },
+            onAddIconClicked = { isAddNewTagDialogVisible = true },
+            onDeleteIconClicked = {
+                if (allUnhiddenTags.size > 3){
+                    isDeleteTagsDialogVisible = true
+                }
+            }
         )
+
+        if(isDeleteTagsDialogVisible){
+            DeleteTagsDialog(
+                onDismiss = { isDeleteTagsDialogVisible = false },
+                allUnhiddenTags=allUnhiddenTags,
+                onDeleteTag = {selectedId -> timerViewModel.deleteTagById(tagId = selectedId)}
+            )
+        }
 
         if(isAddNewTagDialogVisible){
             AddNewTagDialog(
@@ -220,6 +239,83 @@ fun TimerScreen(
                 onConfirm = { tagName ->
                     timerViewModel.addNewTag(newTagTitle = tagName)
                     isAddNewTagDialogVisible = false
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun DeleteTagsDialog(
+    onDismiss: () -> Unit,
+    allUnhiddenTags: List<Tag>,
+    onDeleteTag: (Int) -> Unit
+) {
+
+    var tagToDelete by remember { mutableStateOf<Tag?>(null) }
+
+    Dialog(
+        onDismissRequest = { onDismiss() }
+    ){
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+            shape = RoundedCornerShape(16.dp)
+        ){
+            LazyColumn(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(horizontal = 10.dp)
+            ) {
+
+                items(allUnhiddenTags){ currentTag->
+                    if(currentTag.id !in 0..2){
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp, horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
+                        ){
+                            Text(
+                                modifier = Modifier.weight(1f),
+                                text = currentTag.title
+                            )
+
+                            IconButton(
+                                onClick = {
+                                    tagToDelete = currentTag
+                                }
+                            ) {
+                                Icon( imageVector = Icons.Default.Delete, contentDescription = null)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if(tagToDelete != null){
+            AlertDialog(
+                onDismissRequest = { tagToDelete = null },
+                title = { Text("Delete Tag?") },
+                text = { Text("Are you sure you want to delete \"${tagToDelete?.title}\"? This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            tagToDelete?.let { onDeleteTag(it.id) }
+                            tagToDelete = null
+                            onDismiss()
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { tagToDelete = null }) {
+                        Text("Cancel")
+                    }
                 }
             )
         }
@@ -273,7 +369,8 @@ fun TagSelectorComponent(
     allTags: List<Tag>,
     selectedTagId: Int,
     onTagIdChange: (Int)->Unit,
-    onAddIconClicked: ()->Unit
+    onAddIconClicked: ()->Unit,
+    onDeleteIconClicked: ()->Unit,
 ) {
     AnimatedVisibility(
         visible = !isRunning,
@@ -365,9 +462,7 @@ fun TagSelectorComponent(
                     modifier = Modifier
                         .size(14.dp)
                         .combinedClickable(
-                            onClick = {
-                                println("CLICKED ON DELETE ICON")
-                            }
+                            onClick = { onDeleteIconClicked() }
                         )
                 )
             }
