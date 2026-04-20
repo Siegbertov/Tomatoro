@@ -2,6 +2,7 @@
     <string name="app_name">Tomatoro</string>
 
 
+    <string name="mode_selector_label">mode</string>
     <string name="settings_duration">DURATION</string>
     <string name="tomatoro_session">TOMATORO</string>
     <string name="short_break_session">BREAK</string>

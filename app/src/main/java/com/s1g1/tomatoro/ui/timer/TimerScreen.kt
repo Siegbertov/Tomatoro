@@ -17,6 +17,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -55,10 +57,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.min
 import androidx.core.content.ContextCompat
 import com.s1g1.tomatoro.MainThemeColors
+import com.s1g1.tomatoro.R
 import com.s1g1.tomatoro.service.TimerService
 
 @Composable
@@ -263,53 +268,65 @@ fun ModeSelectorComponent(
         exit = fadeOut() + shrinkVertically(),
         modifier=modifier
     ){
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.background,
-            border = BorderStroke(1.dp, currentThemeColor),
-            modifier = Modifier.padding(4.dp)
-        ){
-            if (isLandscape){
-                Column(
-                    modifier = Modifier
-                        .padding(4.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    TimerMode.entries.forEach { mode ->
-                        FilterChip(
-                            modifier=Modifier.padding(vertical = 2.dp),
-                            selected = selectedMode == mode,
-                            onClick = {
-                                if (!isRunning) {
-                                    onModeChange(mode)
-                                }
-                            },
-                            label = { Text(text = stringResource(mode.title)) }
-                        )
+        Box{
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.background,
+                border = BorderStroke(1.dp, currentThemeColor),
+                modifier = Modifier.padding(4.dp)
+            ){
+                if (isLandscape){
+                    Column(
+                        modifier = Modifier
+                            .padding(4.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        TimerMode.entries.forEach { mode ->
+                            FilterChip(
+                                modifier=Modifier.padding(vertical = 2.dp),
+                                selected = selectedMode == mode,
+                                onClick = {
+                                    if (!isRunning) {
+                                        onModeChange(mode)
+                                    }
+                                },
+                                label = { Text(text = stringResource(mode.title)) }
+                            )
+                        }
                     }
-                }
-            } else {
-                Row(
-                    modifier = Modifier
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TimerMode.entries.forEach { mode ->
-                        FilterChip(
-                            modifier=Modifier.padding(horizontal = 2.dp),
-                            selected = selectedMode == mode,
-                            onClick = {
-                                if (!isRunning) {
-                                    onModeChange(mode)
-                                }
-                            },
-                            label = { Text(text = stringResource(mode.title)) }
-                        )
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TimerMode.entries.forEach { mode ->
+                            FilterChip(
+                                modifier=Modifier.padding(horizontal = 2.dp),
+                                selected = selectedMode == mode,
+                                onClick = {
+                                    if (!isRunning) {
+                                        onModeChange(mode)
+                                    }
+                                },
+                                label = { Text(text = stringResource(mode.title)) }
+                            )
+                        }
                     }
                 }
             }
+            Text(
+                text = stringResource(R.string.mode_selector_label),
+                textAlign = TextAlign.Center,
+                fontStyle = FontStyle.Italic,
+                color = currentThemeColor,
+                modifier = Modifier
+                    .offset(x = 16.dp, y = (-8).dp)
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(horizontal = 4.dp)
+            )
         }
     }
 }
