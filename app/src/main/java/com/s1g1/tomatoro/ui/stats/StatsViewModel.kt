@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.s1g1.tomatoro.database.sessions.Session
 import com.s1g1.tomatoro.database.sessions.SessionRepository
+import com.s1g1.tomatoro.database.sessions.SessionWithTag
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,7 +20,7 @@ import java.util.Locale
 
 class StatsViewModel(private val sessionRepository: SessionRepository): ViewModel() {
 
-    val allSessions: StateFlow<List<Session>> = sessionRepository.allSessions
+    val allSessions: StateFlow<List<SessionWithTag>> = sessionRepository.allSessionsWithTags
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -54,7 +55,7 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
         }
     }
 
-    val daySessions: StateFlow<List<Session>> = combine(
+    val daySessions: StateFlow<List<SessionWithTag>> = combine(
         allSessions,
         dayOffset
     ){ sessions, offset ->
@@ -78,7 +79,7 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
             timeInMillis
         }
 
-        sessions.filter { it.endTimestamp in startOfDay until endOfDay }
+        sessions.filter { it.session.endTimestamp in startOfDay until endOfDay }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // TODO WEEK COMPONENTS
@@ -98,7 +99,7 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
         }
     }
 
-    val weekSessions: StateFlow<List<Session>> = combine(
+    val weekSessions: StateFlow<List<SessionWithTag>> = combine(
         allSessions,
         weekOffset
     ){ sessions, offset ->
@@ -121,7 +122,7 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
             timeInMillis
         }
 
-        sessions.filter { it.endTimestamp in startOfWeek until endOfWeek }
+        sessions.filter { it.session.endTimestamp in startOfWeek until endOfWeek }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // TODO MONTH COMPONENTS
@@ -140,7 +141,7 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
         }
     }
 
-    val monthSessions: StateFlow<List<Session>> = combine(
+    val monthSessions: StateFlow<List<SessionWithTag>> = combine(
         allSessions,
         monthOffset
     ){ sessions, offset ->
@@ -162,7 +163,7 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
             timeInMillis
         }
 
-        sessions.filter { it.endTimestamp in startOfMonth until endOfMonth }
+        sessions.filter { it.session.endTimestamp in startOfMonth until endOfMonth }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // TODO YEAR COMPONENTS
@@ -181,7 +182,7 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
         }
     }
 
-    val yearSessions: StateFlow<List<Session>> = combine(
+    val yearSessions: StateFlow<List<SessionWithTag>> = combine(
         allSessions,
         yearOffset
     ){ sessions, offset ->
@@ -203,7 +204,7 @@ class StatsViewModel(private val sessionRepository: SessionRepository): ViewMode
             timeInMillis
         }
 
-        sessions.filter { it.endTimestamp in startOfYear until endOfYear }
+        sessions.filter { it.session.endTimestamp in startOfYear until endOfYear }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
 

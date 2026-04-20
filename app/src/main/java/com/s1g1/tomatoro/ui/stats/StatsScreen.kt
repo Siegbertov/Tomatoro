@@ -42,7 +42,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.s1g1.tomatoro.TimerMode
-import com.s1g1.tomatoro.database.sessions.Session
+import com.s1g1.tomatoro.database.sessions.SessionWithTag
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -114,9 +114,9 @@ fun StatsScreen(
         if (showAllDisplay){
             StatsStorageDialog(
                 onDismiss = { statsViewModel.onToggleAllSessionDisplay() },
-                sessions = allSessions,
-                onToggleSessionDelete = { session ->
-                    statsViewModel.deleteSessionFromDatabase(session = session)
+                sessionsWithTags = allSessions,
+                onToggleSessionDelete = { swt ->
+                    statsViewModel.deleteSessionFromDatabase(session = swt.session)
                 }
             )
 
@@ -127,16 +127,16 @@ fun StatsScreen(
 @Composable
 fun StatsStorageDialog(
     onDismiss: ()->Unit,
-    sessions: List<Session>,
-    onToggleSessionDelete: (Session)-> Unit
+    sessionsWithTags: List<SessionWithTag>,
+    onToggleSessionDelete: (SessionWithTag)-> Unit
 ) {
 
-    val groupedSessions = remember(sessions) {
-        sessions
-            .groupBy { session ->
+    val groupedSessions = remember(sessionsWithTags) {
+        sessionsWithTags
+            .groupBy { swt ->
                 DateTimeFormatter.ofPattern("yyyy MMMM dd")
                     .withZone(ZoneId.systemDefault())
-                    .format(Instant.ofEpochMilli(session.endTimestamp))
+                    .format(Instant.ofEpochMilli(swt.session.endTimestamp))
             }
     }
 
@@ -172,52 +172,29 @@ fun StatsStorageDialog(
                         }
                     }
 
-                    items(sessionsInDay) { currentSession ->
-                        val currentHHMM = currentSession.endTimestamp.let{
+                    items(sessionsInDay) { currentSWT ->
+                        val currentHHMM = currentSWT.session.endTimestamp.let{
                             DateTimeFormatter.ofPattern("HH:mm")
                                 .withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(it))
                         }
+                        val currentText = "$currentHHMM ${stringResource(currentSWT.session.mode.title)} (${(currentSWT.session.duration / 60).toInt()}m)\nTag: ${currentSWT.tag.title}"
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceEvenly,
                             verticalAlignment = Alignment.CenterVertically
                         ){
                             Text(
                                 modifier = Modifier.weight(1f),
-                                text = "$currentHHMM ${stringResource(currentSession.mode.title)} (${(currentSession.duration / 60).toInt()}m)"
+                                text = currentText
                             )
                             IconButton(
-                                onClick = { onToggleSessionDelete(currentSession) }
+                                onClick = { onToggleSessionDelete(currentSWT) }
                             ){
                                 Icon(imageVector = Icons.Default.Delete, contentDescription = null)
                             }
                         }
                     }
-
-
                 }
-
-
-//            items(sessions){ currentSession->
-//                Row(
-//                    modifier = Modifier.fillMaxWidth(),
-//                    horizontalArrangement = Arrangement.SpaceEvenly,
-//                    verticalAlignment = Alignment.CenterVertically
-//                ){
-//                    Text( text = currentSession.endTimestamp.let{
-//                        DateTimeFormatter.ofPattern("(yyyy MMM dd HH:mm)")
-//                            .withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(it))
-//                    } )
-//                    Text( text = currentSession.mode.name )
-//                    Text( text = currentSession.duration.toString() )
-//                    Spacer(modifier = Modifier.weight(1f))
-//                    IconButton(onClick = {
-//                        onToggleSessionDelete(currentSession)
-//                    }){
-//                        Icon(imageVector = Icons.Default.Delete, contentDescription = null)
-//                    }
-//                }
-//            }
             }
         }
     }
@@ -244,21 +221,21 @@ fun StorageRow(
 @Composable
 fun StatsRow(
     periodLabel: String,
-    sessions: List<Session>,
+    sessions: List<SessionWithTag>,
     onLeftClick: ()->Unit,
     onRightClick: ()->Unit,
 ){
 
-    val totalTime = sessions.sumOf { it.duration }
+    val totalTime = sessions.sumOf { it.session.duration }
 
     val tomatoroPercentage = if (totalTime!=0L) {
-        sessions.sumOf { if(it.mode== TimerMode.TOMATORO) it.duration else 0 } * 100 / totalTime
+        sessions.sumOf { if(it.session.mode== TimerMode.TOMATORO) it.session.duration else 0 } * 100 / totalTime
     } else 0
     val breakPercentage = if (totalTime!=0L) {
-        sessions.sumOf { if(it.mode== TimerMode.BREAK) it.duration else 0 } * 100 / totalTime
+        sessions.sumOf { if(it.session.mode== TimerMode.BREAK) it.session.duration else 0 } * 100 / totalTime
     } else 0
     val longBreakPercentage = if (totalTime!=0L) {
-        sessions.sumOf { if(it.mode== TimerMode.LONG_BREAK) it.duration else 0 } * 100 / totalTime
+        sessions.sumOf { if(it.session.mode== TimerMode.LONG_BREAK) it.session.duration else 0 } * 100 / totalTime
     } else 0
 
     Column(modifier = Modifier.padding(16.dp)) {

@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.Flow
 
 class SessionRepository(private val sessionDao: SessionDao) {
 
-    val allSessions: Flow<List<Session>> = sessionDao.getAllSessions()
+    val allSessionsWithTags: Flow<List<SessionWithTag>> = sessionDao.getAllSessionsWithTags()
 
     suspend fun saveSession(session: Session){
         return sessionDao.upsertSession(session = session)

@@ -19,15 +19,3 @@ data class Tag(
 // TODO HARD DELETE -
 //  hide tag
 //  ===> isHidden=true
-
-//db.execSQL(
-//"INSERT INTO tags (id, title, isRemovable, isHidden) VALUES (0, 'NONE', 0, 0)"
-//)
-
-//db.execSQL(
-//"INSERT INTO tags (id, title, isRemovable, isHidden) VALUES (1, 'WORK', 0, 0)"
-//)
-
-//db.execSQL(
-//"INSERT INTO tags (id, title, isRemovable, isHidden) VALUES (2, 'STUDY', 0, 0)"
-//)
