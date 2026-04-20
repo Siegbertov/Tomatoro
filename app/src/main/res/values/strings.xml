@@ -3,6 +3,12 @@
 
 
     <string name="mode_selector_label">mode</string>
+    <string name="tag_selector_label">tag</string>
+    <string name="add_new_tag">New Tag</string>
+    <string name="add_btn_text">ADD</string>
+    <string name="cancel_btn_text">CANCEL</string>
+
+
     <string name="settings_duration">DURATION</string>
     <string name="tomatoro_session">TOMATORO</string>
     <string name="short_break_session">BREAK</string>
@@ -28,8 +34,7 @@
 
 
     <string name="block_duration_while_running">YOU CANNOT CHANGE DURATION WHILE TIMER IS RUNNING</string>
-
-
+    <string name="new_tag_title">New Tag Title</string>
 
 
 </resources>

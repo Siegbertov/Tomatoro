@@ -18,6 +18,8 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -28,23 +30,34 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,12 +71,15 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.min
 import androidx.core.content.ContextCompat
 import com.s1g1.tomatoro.MainThemeColors
 import com.s1g1.tomatoro.R
+import com.s1g1.tomatoro.database.tags.Tag
 import com.s1g1.tomatoro.service.TimerService
 
 @Composable
@@ -77,6 +93,10 @@ fun TimerScreen(
     val currentMainThemeColor: Color = MainThemeColors.fromName(
         name = userSettings?.mainThemeColor ?: MainThemeColors.getDefault().name
     ).color
+
+    val allUnhiddenTags by timerViewModel.allUnhiddenTags.collectAsState()
+    var selectedTagId by rememberSaveable { mutableIntStateOf(0) }
+    var isAddNewTagDialogVisible by rememberSaveable { mutableStateOf(false) }
 
     var selectedMode by remember { mutableStateOf(TimerMode.TOMATORO) }
 
@@ -174,10 +194,182 @@ fun TimerScreen(
             ),
             isRunning=isRunning,
             isLandscape=isLandscape,
-            selectedMode=selectedMode,
             currentThemeColor = currentMainThemeColor,
+            selectedMode=selectedMode,
             onModeChange={ newMode-> selectedMode = newMode}
         )
+
+        TagSelectorComponent(
+            modifier = Modifier.align(
+                if (isLandscape) Alignment.CenterEnd else Alignment.BottomCenter
+            ),
+            isRunning=isRunning,
+            isLandscape=isLandscape,
+            currentThemeColor = currentMainThemeColor,
+            allTags = allUnhiddenTags,
+            selectedTagId = selectedTagId,
+            onTagIdChange = {newId -> selectedTagId = newId},
+            onAddIconClicked = { isAddNewTagDialogVisible = true }
+        )
+
+        if(isAddNewTagDialogVisible){
+            AddNewTagDialog(
+                onDismiss = { isAddNewTagDialogVisible = false },
+                onConfirm = { tagName ->
+                    timerViewModel.addNewTag(newTagTitle = tagName)
+                    isAddNewTagDialogVisible = false
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun AddNewTagDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var tagName by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = { onDismiss() },
+        title = { Text(text = stringResource(R.string.add_new_tag)) },
+        text = {
+            OutlinedTextField(
+                value = tagName,
+                onValueChange = { tagName = it },
+                label = { Text(stringResource(R.string.new_tag_title)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Characters,
+                    keyboardType = KeyboardType.Text
+                ),
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(tagName) },
+                enabled = tagName.isNotBlank()
+            ) {
+                Text(stringResource(R.string.add_btn_text))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = {onDismiss()}) {
+                Text(stringResource(R.string.cancel_btn_text))
+            }
+        }
+    )
+}
+
+@Composable
+fun TagSelectorComponent(
+    modifier: Modifier,
+    isRunning: Boolean,
+    isLandscape: Boolean,
+    currentThemeColor: Color,
+    allTags: List<Tag>,
+    selectedTagId: Int,
+    onTagIdChange: (Int)->Unit,
+    onAddIconClicked: ()->Unit
+) {
+    AnimatedVisibility(
+        visible = !isRunning,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically(),
+        modifier=modifier
+    ){
+        Box{
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.background,
+                border = BorderStroke(1.dp, currentThemeColor),
+                modifier = Modifier.padding(4.dp)
+            ){
+                if (isLandscape){
+                    val scrollState = rememberScrollState()
+                    Column(
+                        modifier = Modifier
+                            .verticalScroll(scrollState)
+                            .padding(4.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        allTags.forEach { currentTag ->
+                            FilterChip(
+                                modifier=Modifier.padding(vertical = 2.dp),
+                                selected = selectedTagId == currentTag.id,
+                                onClick = {
+                                    if (!isRunning) {
+                                        onTagIdChange(currentTag.id)
+                                    }
+                                },
+                                label = { Text(text = currentTag.title) }
+                            )
+                        }
+                    }
+                } else {
+                    val scrollState = rememberScrollState()
+                    Row(
+                        modifier = Modifier
+                            .horizontalScroll(scrollState)
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        allTags.forEach { currentTag ->
+                            FilterChip(
+                                modifier=Modifier.padding(horizontal = 2.dp),
+                                selected = selectedTagId == currentTag.id,
+                                onClick = {
+                                    if (!isRunning) {
+                                        onTagIdChange(currentTag.id)
+                                    }
+                                },
+                                label = { Text(text = currentTag.title) }
+                            )
+                        }
+                    }
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = (-16).dp, y = (-8).dp)
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ){
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(14.dp)
+                        .combinedClickable(
+                            onClick = { onAddIconClicked() }
+                        )
+                )
+                Text(
+                    text = stringResource(R.string.tag_selector_label),
+                    textAlign = TextAlign.Center,
+                    fontStyle = FontStyle.Italic,
+                    color = currentThemeColor,
+                    modifier = Modifier
+
+                )
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(14.dp)
+                        .combinedClickable(
+                            onClick = {
+                                println("CLICKED ON DELETE ICON")
+                            }
+                        )
+                )
+            }
+        }
     }
 }
 
@@ -228,7 +420,7 @@ fun TimerComponent(
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = minSize/6),
+                .padding(bottom = minSize / 6),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -324,6 +516,7 @@ fun ModeSelectorComponent(
                 color = currentThemeColor,
                 modifier = Modifier
                     .offset(x = 16.dp, y = (-8).dp)
+                    .align(Alignment.TopStart)
                     .background(MaterialTheme.colorScheme.background)
                     .padding(horizontal = 4.dp)
             )
