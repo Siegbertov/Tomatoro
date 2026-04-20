@@ -1,4 +1,4 @@
-package com.s1g1.tomatoro.database
+package com.s1g1.tomatoro.database.sessions
 
 import kotlinx.coroutines.flow.Flow
 

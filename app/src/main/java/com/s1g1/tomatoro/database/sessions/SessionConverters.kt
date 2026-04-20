@@ -1,4 +1,4 @@
-package com.s1g1.tomatoro.database
+package com.s1g1.tomatoro.database.sessions
 
 import androidx.room.TypeConverter
 import com.s1g1.tomatoro.TimerMode

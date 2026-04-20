@@ -4,8 +4,8 @@ import android.icu.text.SimpleDateFormat
 import android.icu.util.Calendar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.s1g1.tomatoro.database.Session
-import com.s1g1.tomatoro.database.SessionRepository
+import com.s1g1.tomatoro.database.sessions.Session
+import com.s1g1.tomatoro.database.sessions.SessionRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

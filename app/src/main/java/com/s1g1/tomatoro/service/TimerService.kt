@@ -15,8 +15,8 @@ import androidx.core.app.NotificationCompat
 import com.s1g1.tomatoro.MainActivity
 import com.s1g1.tomatoro.R
 import com.s1g1.tomatoro.TimerMode
-import com.s1g1.tomatoro.database.Session
-import com.s1g1.tomatoro.database.SessionRepository
+import com.s1g1.tomatoro.database.sessions.Session
+import com.s1g1.tomatoro.database.sessions.SessionRepository
 import com.s1g1.tomatoro.triggerVibration
 import com.s1g1.tomatoro.ui.timer.TimerAction
 import kotlinx.coroutines.CoroutineScope

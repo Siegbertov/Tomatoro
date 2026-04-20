@@ -42,7 +42,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.s1g1.tomatoro.TimerMode
-import com.s1g1.tomatoro.database.Session
+import com.s1g1.tomatoro.database.sessions.Session
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter

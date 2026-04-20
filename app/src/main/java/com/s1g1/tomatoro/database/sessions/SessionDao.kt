@@ -1,4 +1,4 @@
-package com.s1g1.tomatoro.database
+package com.s1g1.tomatoro.database.sessions
 
 import androidx.room.Dao
 import androidx.room.Delete

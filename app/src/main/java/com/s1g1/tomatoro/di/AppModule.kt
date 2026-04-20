@@ -6,7 +6,9 @@ import androidx.room.Room
 import com.s1g1.tomatoro.SettingsRepository
 import com.s1g1.tomatoro.ui.settings.SettingsViewModel
 import com.s1g1.tomatoro.database.AppDatabase
-import com.s1g1.tomatoro.database.SessionRepository
+import com.s1g1.tomatoro.database.MIGRATION_1_2
+import com.s1g1.tomatoro.database.sessions.SessionRepository
+import com.s1g1.tomatoro.database.tags.TagRepository
 import com.s1g1.tomatoro.ui.stats.StatsViewModel
 import com.s1g1.tomatoro.ui.timer.TimerViewModel
 import org.koin.android.ext.koin.androidApplication
@@ -35,12 +37,20 @@ val appModule = module {
             get(),
             AppDatabase::class.java,
             "app_database"
-        ).build()
+        )
+            .addMigrations(
+                MIGRATION_1_2
+            )
+            .build()
     }
 
+    // sessions
     single { get<AppDatabase>().sessionDao() }
+    single { SessionRepository(sessionDao = get()) }
 
-    single { SessionRepository(get()) }
+    // tags
+    single { get<AppDatabase>().tagDao() }
+    single { TagRepository(tagDao = get()) }
 
     viewModel { TimerViewModel(
         application = androidApplication()

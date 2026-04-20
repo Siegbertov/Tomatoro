@@ -1,4 +1,4 @@
-package com.s1g1.tomatoro.database
+package com.s1g1.tomatoro.database.sessions
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
