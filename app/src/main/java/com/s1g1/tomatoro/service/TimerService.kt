@@ -7,9 +7,13 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.media.AudioAttributes
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.s1g1.tomatoro.MainActivity
@@ -17,7 +21,6 @@ import com.s1g1.tomatoro.R
 import com.s1g1.tomatoro.TimerMode
 import com.s1g1.tomatoro.database.sessions.Session
 import com.s1g1.tomatoro.database.sessions.SessionRepository
-import com.s1g1.tomatoro.triggerVibration
 import com.s1g1.tomatoro.ui.timer.TimerAction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -80,6 +83,31 @@ class TimerService : Service(), KoinComponent {
 
     private val notificationManager by lazy {
         getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+    }
+    private val vibrator: Vibrator by lazy {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(VIBRATOR_SERVICE) as Vibrator
+        }
+    }
+    private fun makeVibrations(){
+        val audioAttributes = AudioAttributes.Builder()
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .setUsage(AudioAttributes.USAGE_ALARM)
+            .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            vibrator.vibrate(
+                VibrationEffect.createWaveform(longArrayOf(0, 250, 100, 250), -1),
+                audioAttributes
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(500)
+        }
     }
 
     override fun onBind(intent: Intent): IBinder? = null
@@ -148,7 +176,7 @@ class TimerService : Service(), KoinComponent {
                 _isRunning.value = false
                 _secondsLeft.value = _currentFullSeconds.value ?: 0L
                 _currentFullSeconds.value = null
-                triggerVibration(this@TimerService)
+                makeVibrations()
             } finally {
                 if (wakeLock.isHeld) wakeLock.release()
             }
@@ -292,6 +320,7 @@ class TimerService : Service(), KoinComponent {
         serviceScope.cancel()
         timerJob?.cancel()
         notificationManager.cancel(NOTIFICATION_ID)
+        vibrator.cancel()
         if (wakeLock.isHeld) wakeLock.release()
         stopSelf()
         super.onDestroy()
