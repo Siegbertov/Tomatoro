@@ -57,12 +57,6 @@ class StatsViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
-    private val _showAllDisplay = MutableStateFlow(false)
-    val showAllDisplay = _showAllDisplay.asStateFlow()
-
-    fun onToggleAllSessionDisplay(){
-        _showAllDisplay.value = !_showAllDisplay.value
-    }
 
     fun deleteSessionFromDatabase(session: Session){
         viewModelScope.launch(Dispatchers.IO){

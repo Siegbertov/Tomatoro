@@ -48,7 +48,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.s1g1.tomatoro.TimerMode
 import com.s1g1.tomatoro.database.sessions.SessionWithTag
 import com.s1g1.tomatoro.database.tags.Tag
@@ -62,9 +61,9 @@ fun StatsScreen(
 ) {
 
     var isSelectTagDialogVisible by rememberSaveable { mutableStateOf(false) }
+    var isStorageDialogVisible by rememberSaveable { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
-    val showAllDisplay by statsViewModel.showAllDisplay.collectAsStateWithLifecycle()
     val allSessions by statsViewModel.allSessionsWithTags.collectAsState()
 
     val dayLabel by statsViewModel.dayLabel.collectAsState()
@@ -128,7 +127,7 @@ fun StatsScreen(
             )
 
             StorageRow(
-                onStorageClick = { statsViewModel.onToggleAllSessionDisplay() }
+                onStorageClick = { isStorageDialogVisible = true }
             )
         }
         if (isSelectTagDialogVisible){
@@ -139,9 +138,9 @@ fun StatsScreen(
                 onDismiss = { isSelectTagDialogVisible=false }
             )
         }
-        if (showAllDisplay){
+        if (isStorageDialogVisible){
             StatsStorageDialog(
-                onDismiss = { statsViewModel.onToggleAllSessionDisplay() },
+                onDismiss = { isStorageDialogVisible = false },
                 sessionsWithTags = allSessions,
                 onToggleSessionDelete = { swt ->
                     statsViewModel.deleteSessionFromDatabase(session = swt.session)
